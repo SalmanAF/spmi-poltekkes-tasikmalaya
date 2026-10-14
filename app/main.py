@@ -63,9 +63,9 @@ app = FastAPI(
     version="1.0.0",
 )
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-STATIC_DIR = BASE_DIR / "static"
-TEMPLATE_DIR = BASE_DIR / "templates"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
 logger = logging.getLogger(__name__)
 SESSION_SECRET = os.getenv("SPMI_SESSION_SECRET", "").strip()
 if len(SESSION_SECRET.encode("utf-8")) < 32:
@@ -80,7 +80,7 @@ if SETUP_TOKEN and (len(SETUP_TOKEN) < 32 or not SETUP_TOKEN.isascii()):
 initialize_auth_db()
 sync_document_registry(all_documents())
 
-app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=str(TEMPLATE_DIR))
 MAX_UPLOAD_SIZE = 20 * 1024 * 1024
 
