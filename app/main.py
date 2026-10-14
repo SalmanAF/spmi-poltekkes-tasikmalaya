@@ -4,7 +4,11 @@ import secrets
 import uuid
 from pathlib import Path
 from math import ceil
+import os
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
+app = FastAPI()
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import ValidationError
