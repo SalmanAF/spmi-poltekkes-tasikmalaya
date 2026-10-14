@@ -1,0 +1,404 @@
+.visi-misi-overlay[hidden] {
+  display: none !important;
+}
+
+.visi-misi-overlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: clamp(12px, 3vw, 36px);
+  overflow-y: auto;
+  background: rgba(5, 22, 38, 0.72);
+  backdrop-filter: blur(5px);
+  animation: visi-misi-fade-in 220ms ease-out both;
+}
+
+.visi-misi-dialog {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 1240px);
+  max-height: 88vh;
+  overflow: hidden;
+  border: 1px solid rgba(116, 190, 215, 0.8);
+  border-radius: 20px;
+  color: #17364d;
+  background:
+    radial-gradient(ellipse at 8% 0%, rgba(209, 240, 246, 0.72), transparent 34%),
+    linear-gradient(145deg, #fbfeff 0%, #f0f8fc 55%, #ffffff 100%);
+  box-shadow: 0 28px 90px rgba(0, 15, 31, 0.36);
+  animation: visi-misi-scale-up 260ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+
+.visi-misi-dialog::before,
+.visi-misi-dialog::after {
+  position: absolute;
+  z-index: -1;
+  width: 116px;
+  height: 116px;
+  border: 1px solid rgba(32, 166, 153, 0.2);
+  border-radius: 50%;
+  content: "";
+  pointer-events: none;
+}
+
+.visi-misi-dialog::before {
+  top: -62px;
+  left: -54px;
+  background:
+    repeating-conic-gradient(
+      from 45deg,
+      rgba(32, 166, 153, 0.12) 0deg 8deg,
+      transparent 8deg 16deg
+    );
+}
+
+.visi-misi-dialog::after {
+  right: -55px;
+  bottom: -62px;
+  background:
+    repeating-conic-gradient(
+      from 45deg,
+      rgba(22, 131, 216, 0.1) 0deg 8deg,
+      transparent 8deg 16deg
+    );
+}
+
+.visi-misi-close {
+  position: absolute;
+  z-index: 1;
+  top: 18px;
+  right: 18px;
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid rgba(11, 41, 66, 0.12);
+  border-radius: 50%;
+  color: #0b2942;
+  background: rgba(255, 255, 255, 0.92);
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background 160ms ease,
+    transform 160ms ease;
+}
+
+.visi-misi-close:hover {
+  transform: rotate(90deg);
+  color: white;
+  background: #0b7890;
+}
+
+.visi-misi-close svg {
+  width: 21px;
+  height: 21px;
+}
+
+.visi-misi-header {
+  flex: 0 0 auto;
+  padding: 26px 72px 20px;
+  text-align: center;
+}
+
+.visi-misi-logo {
+  display: block;
+  width: auto;
+  max-width: min(220px, 48vw);
+  height: 40px;
+  margin: 0 auto 12px;
+  object-fit: contain;
+}
+
+.visi-misi-kicker {
+  display: block;
+  margin-bottom: 5px;
+  color: #148296;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.visi-misi-header h2 {
+  margin: 0;
+  color: #0b2942;
+  font: 800 clamp(27px, 3.5vw, 43px) / 1.08 "Manrope", sans-serif;
+  letter-spacing: 0.045em;
+}
+
+.visi-misi-header h2 span {
+  color: #23a99a;
+}
+
+.visi-misi-header > p {
+  margin: 8px 0 0;
+  color: #517085;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.visi-misi-content {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.82fr) minmax(0, 1.55fr);
+  gap: 20px;
+  min-height: 0;
+  padding: 0 clamp(20px, 3.5vw, 48px) 22px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #85bbc6 transparent;
+  scrollbar-width: thin;
+}
+
+.visi-panel,
+.misi-panel {
+  min-width: 0;
+  border: 1px solid #d5eaf0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.83);
+  box-shadow: 0 10px 28px rgba(18, 72, 100, 0.07);
+}
+
+.visi-panel {
+  align-self: start;
+  padding: clamp(20px, 2.5vw, 34px);
+  background:
+    linear-gradient(145deg, rgba(225, 246, 248, 0.8), rgba(255, 255, 255, 0.94)),
+    #fff;
+}
+
+.misi-panel {
+  padding: clamp(18px, 2.2vw, 28px);
+}
+
+.visi-misi-section-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.visi-misi-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 11px;
+  color: #0b7890;
+  background: #ddf4f2;
+}
+
+.visi-misi-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.visi-misi-section-title h3 {
+  margin: 0;
+  color: #0b2942;
+  font: 800 18px/1.2 "Manrope", sans-serif;
+  letter-spacing: 0.1em;
+}
+
+.visi-panel blockquote {
+  margin: 0;
+  color: #24465e;
+  font: 600 clamp(16px, 1.55vw, 20px) / 1.75 "DM Sans", sans-serif;
+}
+
+.misi-list {
+  display: grid;
+  gap: 13px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.misi-list li {
+  display: grid;
+  grid-template-columns: 29px minmax(0, 1fr);
+  align-items: start;
+  gap: 11px;
+}
+
+.misi-list li > span {
+  display: grid;
+  width: 27px;
+  height: 27px;
+  place-items: center;
+  border-radius: 50%;
+  color: white;
+  background: #159b91;
+  box-shadow: 0 3px 8px rgba(21, 155, 145, 0.24);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.misi-list p {
+  margin: 2px 0 0;
+  color: #3d566a;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.visi-misi-footer {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px clamp(20px, 3.5vw, 48px) 20px;
+  border-top: 1px solid rgba(137, 187, 201, 0.32);
+  color: #678092;
+  font-size: 11px;
+}
+
+.visi-misi-dismiss {
+  min-height: 40px;
+  padding: 9px 18px;
+  border: 0;
+  border-radius: 8px;
+  color: white;
+  background: #0b7890;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  transition: background 160ms ease;
+}
+
+.visi-misi-dismiss:hover {
+  background: #0b2942;
+}
+
+.visi-misi-close:focus-visible,
+.visi-misi-dismiss:focus-visible {
+  outline: 3px solid rgba(22, 131, 216, 0.55);
+  outline-offset: 3px;
+}
+
+@keyframes visi-misi-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes visi-misi-scale-up {
+  from {
+    transform: scale(0.97);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 760px) {
+  .visi-misi-dialog {
+    max-height: 92vh;
+  }
+
+  .visi-misi-header {
+    padding: 22px 56px 18px;
+  }
+
+  .visi-misi-content {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 13px;
+    padding: 0 18px 18px;
+  }
+
+  .visi-panel,
+  .misi-panel {
+    padding: 18px;
+  }
+
+  .visi-panel blockquote {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .visi-misi-overlay {
+    padding: 10px;
+  }
+
+  .visi-misi-dialog {
+    max-height: 94vh;
+    border-radius: 15px;
+  }
+
+  .visi-misi-close {
+    top: 11px;
+    right: 11px;
+    width: 38px;
+    height: 38px;
+  }
+
+  .visi-misi-header {
+    padding: 20px 42px 15px;
+  }
+
+  .visi-misi-logo {
+    height: 32px;
+    margin-bottom: 9px;
+  }
+
+  .visi-misi-kicker {
+    font-size: 8px;
+  }
+
+  .visi-misi-header > p {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+  }
+
+  .visi-misi-content {
+    gap: 10px;
+    padding: 0 12px 14px;
+  }
+
+  .visi-panel,
+  .misi-panel {
+    padding: 15px;
+  }
+
+  .misi-list {
+    gap: 12px;
+  }
+
+  .misi-list p {
+    font-size: 12px;
+  }
+
+  .visi-misi-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 15px 15px;
+  }
+
+  .visi-misi-dismiss {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visi-misi-overlay,
+  .visi-misi-dialog {
+    animation-duration: 1ms;
+  }
+
+  .visi-misi-close,
+  .visi-misi-dismiss {
+    transition: none;
+  }
+}

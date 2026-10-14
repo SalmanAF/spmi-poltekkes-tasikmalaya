@@ -1,0 +1,110 @@
+﻿<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Katalog dokumen publik Sistem Penjaminan Mutu Internal Poltekkes Kemenkes Tasikmalaya."
+    />
+    <title>
+      {% block title %}SPMI Poltekkes Kemenkes Tasikmalaya{% endblock %}
+    </title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', path='css/user.css') }}?v=2"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', path='css/user-dashboard.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', path='css/user-responsive.css') }}?v=2"
+    />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script defer src="{{ url_for('static', path='js/user.js') }}"></script>
+    <script defer src="{{ url_for('static', path='js/katalog.js') }}"></script>
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <header class="user-header">
+      <div class="user-header-inner">
+        <a
+          class="user-brand"
+          href="{{ url_for('user_home') }}"
+          aria-label="SPMI Poltekkes Kemenkes Tasikmalaya, beranda"
+        >
+          <img
+            class="user-brand-logo"
+            src="{{ url_for('static', path='images/poltekkes-kemenkes-tasikmalaya.png') }}"
+            alt="Poltekkes Kemenkes Tasikmalaya"
+            width="140"
+            height="25"
+          />
+        </a>
+        <button
+          class="mobile-nav-toggle"
+          type="button"
+          aria-label="Buka navigasi"
+          aria-expanded="false"
+          aria-controls="user-navigation"
+        >
+          <i data-lucide="menu" aria-hidden="true"></i>
+        </button>
+        <nav
+          class="user-navigation"
+          id="user-navigation"
+          aria-label="Navigasi pengguna"
+        >
+          {% set links = [ ('beranda', 'user_home', 'Beranda'), ('katalog',
+          'user_catalog', 'Katalog Dokumen'), ('kebijakan', 'user_kebijakan',
+          'Kebijakan'), ('standar-pt', 'user_standar_pt', 'Standar PT'),
+          ('pedoman', 'user_pedoman', 'Pedoman'), ('sop', 'user_sop', 'SOP'),
+          ('formulir', 'user_formulir', 'Formulir'), ('peta-integrasi',
+          'user_integration_map', 'Peta Integrasi'), ('unduhan',
+          'user_downloads', 'Unduhan'), ('tentang', 'user_about', 'Tentang
+          SPMI') ] %} {% for slug, route_name, label in links %}
+          <a
+            href="{{ url_for(route_name) }}"
+            {% if active_page == slug %}aria-current="page"{% endif %}
+            >{{ label }}</a
+          >
+          {% endfor %}
+        </nav>
+        <a class="header-search" href="{{ url_for('user_catalog') }}"
+          ><i data-lucide="search" aria-hidden="true"></i
+          ><span>Cari Dokumen</span></a
+        >
+      </div>
+    </header>
+    <main id="main-content">{% block content %}{% endblock %}</main>
+    <footer class="user-footer">
+      <div class="footer-inner">
+        <div>
+          <strong>Poltekkes Kemenkes Tasikmalaya</strong
+          ><span>Sistem Penjaminan Mutu Internal</span>
+        </div>
+        <p>
+          Satu Sistem, Satu Mutu, Satu Tujuan: Perguruan Tinggi yang Unggul.
+        </p>
+        <nav aria-label="Navigasi footer">
+          <a href="{{ url_for('user_catalog') }}">Katalog</a
+          ><a href="{{ url_for('user_integration_map') }}">Peta Integrasi</a
+          ><a href="{{ url_for('user_about') }}">Tentang SPMI</a>
+        </nav>
+      </div>
+    </footer>
+    <div class="user-toast" role="status" aria-live="polite"></div>
+    <script>
+      if (window.lucide) window.lucide.createIcons();
+    </script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

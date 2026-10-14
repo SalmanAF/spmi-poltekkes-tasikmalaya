@@ -1,0 +1,189 @@
+{% extends "admin/base.html" %} {% block title %}Standar PT{% endblock %} {%
+block content %}
+<section class="content-section page-header-panel">
+  <div>
+    <p class="eyebrow">Standar Perguruan Tinggi</p>
+    <h2 class="page-title">Standar PT</h2>
+  </div>
+  <div class="page-actions">
+    <button
+      class="btn btn-primary"
+      data-action="open-modal"
+      data-modal="standar-modal"
+    >
+      + Tambah Standar
+    </button>
+    <button
+      class="btn btn-secondary"
+      data-action="show-toast"
+      data-message="Fitur pencarian aktif."
+    >
+      Search
+    </button>
+  </div>
+</section>
+
+<section class="content-section card panel-card">
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Kode</th>
+          <th>Nama Standar</th>
+          <th>Kategori</th>
+          <th>Jumlah Pedoman</th>
+          <th>Jumlah SOP</th>
+          <th>Status</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>SPM-01</td>
+          <td>Standar Pendidikan</td>
+          <td>Akademik</td>
+          <td>8</td>
+          <td>45</td>
+          <td><span class="status-pill status-green">Lengkap</span></td>
+          <td>
+            <div class="action-buttons">
+              <button
+                class="icon-btn"
+                data-action="show-toast"
+                data-message="Detail standar dibuka."
+                aria-label="Detail"
+              >
+                <span data-lucide="eye"></span>
+              </button>
+              <button
+                class="icon-btn"
+                data-action="open-modal"
+                data-modal="standar-modal"
+                aria-label="Edit"
+              >
+                <span data-lucide="pencil"></span>
+              </button>
+              <button
+                class="icon-btn danger"
+                data-action="show-toast"
+                data-message="Hapus standar belum tersedia."
+                aria-label="Delete"
+              >
+                <span data-lucide="trash-2"></span>
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>SPM-02</td>
+          <td>Standar Penelitian</td>
+          <td>Penelitian</td>
+          <td>8</td>
+          <td>38</td>
+          <td><span class="status-pill status-green">Lengkap</span></td>
+          <td>
+            <div class="action-buttons">
+              <button
+                class="icon-btn"
+                data-action="show-toast"
+                data-message="Detail standar dibuka."
+                aria-label="Detail"
+              >
+                <span data-lucide="eye"></span>
+              </button>
+              <button
+                class="icon-btn"
+                data-action="open-modal"
+                data-modal="standar-modal"
+                aria-label="Edit"
+              >
+                <span data-lucide="pencil"></span>
+              </button>
+              <button
+                class="icon-btn danger"
+                data-action="show-toast"
+                data-message="Hapus standar belum tersedia."
+                aria-label="Delete"
+              >
+                <span data-lucide="trash-2"></span>
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>SPM-03</td>
+          <td>Standar Pengabdian</td>
+          <td>Pengabdian</td>
+          <td>8</td>
+          <td>36</td>
+          <td><span class="status-pill status-green">Lengkap</span></td>
+          <td>
+            <div class="action-buttons">
+              <button
+                class="icon-btn"
+                data-action="show-toast"
+                data-message="Detail standar dibuka."
+                aria-label="Detail"
+              >
+                <span data-lucide="eye"></span>
+              </button>
+              <button
+                class="icon-btn"
+                data-action="open-modal"
+                data-modal="standar-modal"
+                aria-label="Edit"
+              >
+                <span data-lucide="pencil"></span>
+              </button>
+              <button
+                class="icon-btn danger"
+                data-action="show-toast"
+                data-message="Hapus standar belum tersedia."
+                aria-label="Delete"
+              >
+                <span data-lucide="trash-2"></span>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="modal" id="standar-modal" aria-hidden="true">
+  <div class="modal-backdrop" data-dismiss="modal"></div>
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>Form Standar</h3>
+      <button class="icon-btn" data-dismiss="modal" aria-label="Tutup">
+        <span data-lucide="x"></span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <label>
+        Kode Standar
+        <input type="text" value="SPM-04" />
+      </label>
+      <label>
+        Nama Standar
+        <input type="text" value="Standar Tata Kelola" />
+      </label>
+      <label>
+        Kategori
+        <input type="text" value="Manajemen" />
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-dismiss="modal">Batal</button>
+      <button
+        class="btn btn-primary"
+        data-action="show-toast"
+        data-message="Data standar berhasil disimpan (dummy)."
+      >
+        Simpan
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}

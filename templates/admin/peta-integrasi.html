@@ -1,0 +1,77 @@
+{% extends "admin/base.html" %} {% block title %}Peta Integrasi{% endblock %} {%
+block content %}
+<section class="content-section page-header-panel">
+  <div>
+    <p class="eyebrow">Integrasi Dokumen</p>
+    <h2 class="page-title">Peta Integrasi</h2>
+  </div>
+</section>
+
+<section class="content-section card panel-card">
+  <div class="integration-map" id="integrationMap">
+    <div class="integration-root">SPMI<br />Perguruan Tinggi</div>
+
+    <div class="integration-branch">
+      <button
+        class="integration-node integration-node-blue"
+        data-target="pedoman-1"
+      >
+        Standar Pendidikan<br /><small>8 Standar</small>
+      </button>
+      <button
+        class="integration-node integration-node-green"
+        data-target="pedoman-2"
+      >
+        Standar Penelitian<br /><small>8 Standar</small>
+      </button>
+      <button
+        class="integration-node integration-node-orange"
+        data-target="pedoman-3"
+      >
+        Standar Pengabdian<br /><small>8 Standar</small>
+      </button>
+      <button
+        class="integration-node integration-node-purple"
+        data-target="pedoman-4"
+      >
+        Standar Tambahan<br /><small>Non SN Dikti</small>
+      </button>
+    </div>
+
+    <div class="integration-detail" id="integrationDetail">
+      <div class="detail-box active" id="pedoman-1">
+        <h4>Pedoman Terkait</h4>
+        <ul>
+          <li>Pedoman Kurikulum</li>
+          <li>Pedoman Pengajaran</li>
+          <li>Pedoman Evaluasi</li>
+        </ul>
+      </div>
+      <div class="detail-box" id="pedoman-2">
+        <h4>Pedoman Terkait</h4>
+        <ul>
+          <li>Pedoman Penelitian</li>
+          <li>Pedoman Publikasi</li>
+          <li>Pedoman Hibah</li>
+        </ul>
+      </div>
+      <div class="detail-box" id="pedoman-3">
+        <h4>Pedoman Terkait</h4>
+        <ul>
+          <li>Pedoman PKM</li>
+          <li>Pedoman Kemitraan</li>
+          <li>Pedoman Monitoring</li>
+        </ul>
+      </div>
+      <div class="detail-box" id="pedoman-4">
+        <h4>Pedoman Terkait</h4>
+        <ul>
+          <li>Pedoman Mutu</li>
+          <li>Pedoman SDM</li>
+          <li>Pedoman Sarana</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

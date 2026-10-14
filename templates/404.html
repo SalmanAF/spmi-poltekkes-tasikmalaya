@@ -1,0 +1,16 @@
+{% extends "base_user.html" %} {% block title %}Halaman tidak ditemukan | SPMI
+Poltekkes Kemenkes Tasikmalaya{% endblock %} {% block content %}
+<section class="not-found">
+  <span><i data-lucide="file-x-2"></i></span>
+  <p class="eyebrow">404 · Tidak ditemukan</p>
+  <h1>{{ message or 'Halaman yang Anda cari tidak tersedia.' }}</h1>
+  <p>Dokumen mungkin tidak ada atau tidak tersedia untuk akses publik.</p>
+  <div>
+    <a class="button button-dark" href="{{ url_for('user_home') }}"
+      >Kembali ke beranda</a
+    ><a class="button button-muted" href="{{ url_for('user_catalog') }}"
+      >Buka katalog</a
+    >
+  </div>
+</section>
+{% endblock %}

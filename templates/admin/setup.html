@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b2942" />
+    <title>Setup Administrator | SPMI Poltekkes Tasikmalaya</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/auth.css') }}" />
+  </head>
+  <body class="auth-page">
+    <main class="auth-layout auth-layout-compact">
+      <section class="auth-brand-panel">
+        <img
+          class="auth-logo"
+          src="{{ url_for('static', path='images/poltekkes-kemenkes-tasikmalaya.png') }}"
+          alt="Logo Poltekkes Kemenkes Tasikmalaya"
+        />
+        <p class="auth-eyebrow">Setup terbatas</p>
+        <h1>Administrator pertama</h1>
+        <p class="auth-intro">Halaman ini hanya aktif dengan token setup server dan sebelum administrator aktif pertama dibuat.</p>
+      </section>
+      <section class="auth-form-panel" aria-labelledby="setup-title">
+        <div class="auth-form-wrap">
+          <p class="auth-eyebrow">Inisialisasi sistem</p>
+          <h2 id="setup-title">Buat administrator pertama</h2>
+          <p class="auth-subtitle">Simpan token setup secara rahasia dan hapus dari konfigurasi setelah akun dibuat.</p>
+          {% if error %}
+          <div class="auth-alert auth-alert-error" role="alert">{{ error }}</div>
+          {% endif %}
+          <form class="auth-form" method="post" action="/admin/setup">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+            <label for="setup_token">Token setup</label>
+            <input id="setup_token" name="setup_token" type="password" autocomplete="off" required />
+            <label for="full_name">Nama lengkap</label>
+            <input id="full_name" name="full_name" type="text" autocomplete="name" required minlength="2" maxlength="100" value="{{ values.full_name or '' }}" />
+            <label for="username">Username</label>
+            <input id="username" name="username" type="text" autocomplete="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9_.-]{3,32}" value="{{ values.username or '' }}" />
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" autocomplete="email" required maxlength="254" value="{{ values.email or '' }}" />
+            <label for="password">Password</label>
+            <div class="password-field">
+              <input id="password" name="password" type="password" autocomplete="new-password" required minlength="12" maxlength="128" aria-describedby="password-hint" />
+              <button class="password-toggle" type="button" data-password-toggle="password" aria-label="Tampilkan password" aria-pressed="false">Lihat</button>
+            </div>
+            <small class="auth-hint" id="password-hint">Minimal 12 karakter dengan huruf besar, huruf kecil, angka, dan simbol.</small>
+            <label for="password_confirmation">Konfirmasi password</label>
+            <div class="password-field">
+              <input id="password_confirmation" name="password_confirmation" type="password" autocomplete="new-password" required minlength="12" maxlength="128" />
+              <button class="password-toggle" type="button" data-password-toggle="password_confirmation" aria-label="Tampilkan konfirmasi password" aria-pressed="false">Lihat</button>
+            </div>
+            <button class="auth-submit" type="submit">Buat administrator</button>
+          </form>
+          <p class="auth-switch"><a href="/admin/login">Kembali ke login</a></p>
+        </div>
+      </section>
+    </main>
+    <script defer src="{{ url_for('static', path='js/auth.js') }}"></script>
+  </body>
+</html>

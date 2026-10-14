@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{{ csrf_token }}" />
+    <title>
+      {% block title %}Dashboard Integrasi Dokumen SPMI{% endblock %}
+    </title>
+    <meta
+      name="description"
+      content="Dashboard Integrasi Dokumen SPMI Poltekkes Kemenkes Tasikmalaya"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', path='css/style.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', path='css/dashboard.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', path='css/responsive.css') }}"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script defer src="{{ url_for('static', path='js/app.js') }}"></script>
+    <script
+      defer
+      src="{{ url_for('static', path='js/dashboard.js') }}"
+    ></script>
+    <script defer src="{{ url_for('static', path='js/charts.js') }}"></script>
+    <script
+      defer
+      src="{{ url_for('static', path='js/documents.js') }}"
+    ></script>
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <div class="page-shell">
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <img
+            class="sidebar-logo"
+            src="{{ url_for('static', path='images/poltekkes-kemenkes-tasikmalaya.png') }}"
+            alt="Poltekkes Kemenkes Tasikmalaya"
+          />
+        </div>
+
+        <nav class="side-nav" aria-label="Navigasi utama">
+          {% set menu_items = [ ('dashboard', 'dashboard', 'Beranda', 'house'),
+          ('struktur-dokumen', 'struktur_dokumen', 'Struktur Dokumen',
+          'file-tree'), ('standar-pt', 'standar_pt', 'Standar PT',
+          'shield-check'), ('pedoman', 'pedoman', 'Pedoman', 'book-open'),
+          ('sop', 'sop', 'SOP', 'settings'), ('perangkat-spmi',
+          'perangkat_spmi', 'Perangkat SPMI', 'files'), ('peta-integrasi',
+          'peta_integrasi', 'Peta Integrasi', 'map'), ('monitoring',
+          'monitoring', 'Monitoring Implementasi', 'chart-line'),
+          ('implementasi', 'implementasi', 'Implementasi', 'clipboard-check'),
+          ('laporan', 'laporan', 'Laporan', 'file-text'), ('unduhan', 'unduhan',
+          'Unduhan Dokumen', 'download'), ('pengaturan', 'pengaturan',
+          'Pengaturan', 'settings') ] %} {% for slug, route_name, label, icon in
+          menu_items %}
+          <a
+            href="{{ url_for(route_name) }}"
+            class="nav-item {% if active_page == slug %}active{% endif %}"
+          >
+            <span
+              class="nav-ico"
+              data-lucide="{{ icon }}"
+              aria-hidden="true"
+            ></span>
+            <span>{{ label }}</span>
+          </a>
+          {% endfor %}
+        </nav>
+
+        <div class="sidebar-quote">
+          <p>Quality is a Culture,<br />Not a Document</p>
+        </div>
+      </aside>
+
+      <div class="main-panel">
+        <header class="topbar">
+          <button
+            class="sidebar-toggle"
+            id="sidebarToggle"
+            aria-label="Toggle menu"
+          >
+            <span data-lucide="menu"></span>
+          </button>
+
+          <div class="header-title-wrap">
+            <h1>DASHBOARD INTEGRASI DOKUMEN SPMI</h1>
+            <h2>SISTEM PENJAMINAN MUTU INTERNAL</h2>
+            <div class="header-tagline">
+              <span>Mutu Terencana</span>
+              <span>|</span>
+              <span>Terlaksana</span>
+              <span>|</span>
+              <span>Terdokumentasi</span>
+              <span>|</span>
+              <span>Berkelanjutan</span>
+            </div>
+          </div>
+
+          <div class="header-cta">
+            <div class="campus-visual" aria-label="Campus illustration">
+              <div class="campus-building"></div>
+            </div>
+            <div class="header-note">
+              <small>MUTU HARI INI</small>
+              <strong>Prestasi Esok Nanti</strong>
+            </div>
+          </div>
+          <div class="admin-topbar-session">
+            <span>{{ admin.full_name if admin else '' }}</span>
+            <form method="post" action="/admin/logout">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+              <button class="btn btn-secondary" type="submit">Logout</button>
+            </form>
+          </div>
+        </header>
+
+        <main class="page-content">{% block content %}{% endblock %}</main>
+
+        <footer class="footer-bar">
+          <div class="footer-mark">SPMI</div>
+          <div class="footer-text">
+            <p>
+              “Satu Sistem, Satu Mutu, Satu Tujuan:<br />Perguruan Tinggi yang
+              Unggul”
+            </p>
+          </div>
+          <div class="footer-brand">
+            <div class="footer-badge">SPMI</div>
+            <small>Menjaga Mutu, Menguatkan Masa Depan</small>
+          </div>
+        </footer>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" aria-live="polite"></div>
+    <script>
+      lucide.createIcons();
+    </script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

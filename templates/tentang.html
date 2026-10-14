@@ -1,0 +1,72 @@
+{% extends "base_user.html" %} {% block title %}Tentang SPMI | Poltekkes
+Kemenkes Tasikmalaya{% endblock %} {% block content %}
+<section class="page-intro">
+  <div>
+    <p class="eyebrow">Poltekkes Kemenkes Tasikmalaya</p>
+    <h1>Tentang SPMI</h1>
+    <p>
+      Pengantar umum mengenai Sistem Penjaminan Mutu Internal dan susunan
+      dokumennya.
+    </p>
+  </div>
+</section>
+<article class="about-content">
+  <section class="about-lead">
+    <span class="about-symbol"><i data-lucide="badge-check"></i></span>
+    <div>
+      <h2>Sistem Penjaminan Mutu Internal</h2>
+      <p>
+        SPMI adalah rangkaian unsur dan proses yang dirancang untuk menjamin dan
+        meningkatkan mutu pendidikan tinggi secara terencana dan berkelanjutan.
+        Penjelasan pada halaman ini bersifat umum, bukan pengganti kebijakan
+        resmi institusi.
+      </p>
+    </div>
+  </section>
+  <div class="about-grid">
+    <section>
+      <span class="about-number">01</span>
+      <h2>Tujuan</h2>
+      <p>
+        Mendorong pemenuhan dan peningkatan standar pendidikan tinggi melalui
+        siklus penetapan, pelaksanaan, evaluasi, pengendalian, dan peningkatan.
+      </p>
+    </section>
+    <section>
+      <span class="about-number">02</span>
+      <h2>Fungsi dokumen</h2>
+      <p>
+        Dokumen mutu membantu menetapkan acuan, menjelaskan pelaksanaan, dan
+        menjaga konsistensi proses serta bukti pelaksanaannya.
+      </p>
+    </section>
+    <section>
+      <span class="about-number">03</span>
+      <h2>Hierarki dokumen</h2>
+      <p>
+        Standar PT menetapkan acuan mutu. Pedoman menjelaskan penerapan standar.
+        SOP merinci langkah kerja operasional.
+      </p>
+    </section>
+    <section>
+      <span class="about-number">04</span>
+      <h2>Alur penjaminan</h2>
+      <p>
+        Mutu dikelola secara berulang melalui penetapan, pelaksanaan, evaluasi,
+        pengendalian, dan peningkatan standar.
+      </p>
+    </section>
+  </div>
+  <section class="about-institution">
+    <p class="eyebrow">Institusi</p>
+    <h2>Poltekkes Kemenkes Tasikmalaya</h2>
+    <p>
+      Portal ini menyediakan akses terhadap dokumen SPMI yang telah ditandai
+      publik oleh pengelola.
+    </p>
+    <a class="text-link" href="{{ url_for('user_catalog') }}"
+      >Jelajahi dokumen publik <i data-lucide="arrow-right"></i
+    ></a>
+  </section>
+</article>
+{% endblock %}

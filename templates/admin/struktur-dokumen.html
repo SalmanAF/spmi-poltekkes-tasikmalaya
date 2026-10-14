@@ -1,0 +1,81 @@
+{% extends "admin/base.html" %}
+{% block title %}Struktur Dokumen SPMI{% endblock %}
+{% block head %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', path='css/admin-structure.css') }}"
+/>
+{% endblock %}
+{% block content %}
+<section class="content-section page-header-panel">
+  <div>
+    <p class="eyebrow">Struktur Dokumen</p>
+    <h2 class="page-title">Struktur Dokumen SPMI</h2>
+    <p class="structure-description">
+      Telusuri hierarki dokumen berdasarkan tahun integrasi.
+    </p>
+  </div>
+</section>
+
+<section class="content-section card panel-card">
+  <div class="table-toolbar">
+    <div class="search-box">
+      <span data-lucide="search" aria-hidden="true"></span>
+      <input
+        id="structureSearch"
+        type="search"
+        placeholder="Cari nama atau kode dokumen"
+        aria-label="Cari nama atau kode dokumen"
+      />
+    </div>
+    <label class="structure-year-filter">
+      <span>Tahun dokumen</span>
+      <select id="structureYear" aria-label="Filter tahun dokumen">
+        <option value="">Semua tahun</option>
+      </select>
+    </label>
+    <label class="structure-type-filter">
+      <span>Jenis</span>
+      <select id="structureType" aria-label="Filter jenis dokumen">
+        <option value="">Semua jenis</option>
+        <option value="Standar PT">Standar PT</option>
+        <option value="Pedoman">Pedoman</option>
+        <option value="SOP">SOP</option>
+      </select>
+    </label>
+    <label class="structure-type-filter">
+      <span>Status</span>
+      <select id="structureStatus" aria-label="Filter status dokumen">
+        <option value="">Semua status</option>
+        <option value="publik">Publik</option>
+        <option value="privat">Privat</option>
+        <option value="draft">Draft</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="structure-statistics" aria-live="polite">
+    <span>Standar PT <strong id="structureStandardCount">—</strong></span>
+    <span>Pedoman <strong id="structureGuidelineCount">—</strong></span>
+    <span>SOP <strong id="structureProcedureCount">—</strong></span>
+    <span>Total <strong id="structureTotalCount">—</strong></span>
+  </div>
+
+  <p
+    class="structure-message"
+    id="structureMessage"
+    role="status"
+    aria-live="polite"
+  >
+    Memuat struktur dokumen...
+  </p>
+  <div class="structure-tree-list" id="structureTree"></div>
+  <div class="structure-search-results" id="structureSearchResults" hidden></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script
+  defer
+  src="{{ url_for('static', path='js/admin-structure.js') }}"
+></script>
+{% endblock %}

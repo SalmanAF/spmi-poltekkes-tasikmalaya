@@ -1,0 +1,120 @@
+{% extends "admin/base.html" %} {% block title %}SOP{% endblock %} {% block head
+%}<link
+  rel="stylesheet"
+  href="{{ url_for('static', path='css/admin-documents.css') }}"
+/>
+{% endblock %} {% block content %}
+<section
+  class="content-section card panel-card document-admin-panel category-document-admin"
+  data-category="SOP"
+>
+  <div class="page-header-panel">
+    <div>
+      <p class="eyebrow">Repositori bersama</p>
+      <h2 class="page-title">SOP</h2>
+    </div>
+    <div class="page-actions">
+      <button
+        class="btn btn-secondary"
+        type="button"
+        id="reloadCategoryDocuments"
+      >
+        <i data-lucide="refresh-cw" aria-hidden="true"></i> Muat ulang
+      </button>
+      <button class="btn btn-primary" type="button" id="addCategoryDocument">
+        <i data-lucide="plus" aria-hidden="true"></i> Tambah SOP
+      </button>
+    </div>
+  </div>
+  <p
+    class="admin-feedback"
+    id="categoryDocumentFeedback"
+    role="status"
+    aria-live="polite"
+  >
+    Memuat data SOP...
+  </p>
+  <div class="summary-row">
+    <div class="summary-badge">
+      Ditampilkan: <strong id="categoryDocumentCount">0</strong> dari
+      <span id="categoryDocumentTotal">0</span> SOP
+    </div>
+  </div>
+  <label class="category-document-search" for="categoryDocumentSearch">
+    <span data-lucide="search" aria-hidden="true"></span>
+    <input
+      id="categoryDocumentSearch"
+      type="search"
+      placeholder="Cari kode, nama SOP, tahun, atau status..."
+      autocomplete="off"
+    />
+  </label>
+  <div class="table-wrapper">
+    <table class="data-table" id="categoryDocumentsTable">
+      <thead>
+        <tr>
+          <th>Kode SOP</th>
+          <th>Nama SOP</th>
+          <th>Tahun</th>
+          <th>Status</th>
+          <th>Link dokumen</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td colspan="6">Memuat data SOP...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<dialog class="document-edit-dialog" id="categoryDocumentDialog">
+  <form id="categoryDocumentForm" method="dialog">
+    <h2 id="categoryDocumentDialogTitle">Tambah SOP</h2>
+    <input type="hidden" name="id" />
+    <input type="hidden" name="kategori" value="SOP" />
+    <label>Kode<input name="kode" maxlength="120" /></label>
+    <label>Judul dokumen<input name="judul" required maxlength="240" /></label>
+    <label
+      >Tahun<input name="tahun" type="number" min="1900" max="2200" required
+    /></label>
+    <label data-parent-link="guideline_id"
+      >Pedoman terkait<select name="guideline_id">
+        <option value="">Tidak dihubungkan</option>
+      </select></label
+    >
+    <label
+      >Link download / Google Drive<input
+        name="link_download"
+        type="url"
+        required
+        maxlength="2048"
+        placeholder="https://drive.google.com/file/d/..."
+    /></label>
+    <label
+      >Status<select name="status">
+        <option value="privat">Privat</option>
+        <option value="publik">Publik</option>
+      </select></label
+    >
+    <div class="dialog-actions">
+      <button
+        class="btn btn-secondary"
+        type="button"
+        value="cancel"
+        id="cancelCategoryDocument"
+      >
+        Batal
+      </button>
+      <button class="btn btn-primary" type="submit">Simpan</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %} {% block scripts %}
+<script
+  defer
+  src="{{ url_for('static', path='js/category-documents-admin.js') }}"
+></script>
+{% endblock %}

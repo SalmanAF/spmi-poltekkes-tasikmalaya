@@ -1,0 +1,308 @@
+{% extends "base_user.html" %}
+{% block title %}Beranda SPMI | Poltekkes Kemenkes Tasikmalaya{% endblock %}
+{% block head %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', path='css/visi-misi.css') }}"
+/>
+{% endblock %}
+{% block content %}
+<section class="home-hero">
+  <div class="hero-content">
+    <p class="eyebrow">Sistem Penjaminan Mutu Internal</p>
+    <h1>Mutu yang terjaga<br /><span>dimulai dari akses.</span></h1>
+    <p class="hero-copy">
+      Temukan, telusuri, dan akses dokumen Sistem Penjaminan Mutu Internal
+      secara mudah dalam satu platform.
+    </p>
+    <div class="hero-actions">
+      <a class="button button-light" href="{{ url_for('user_catalog') }}"
+        >Jelajahi Dokumen <i data-lucide="arrow-up-right"></i></a
+      ><a
+        class="button button-outline-light"
+        href="{{ url_for('user_integration_map') }}"
+        >Lihat Peta Integrasi</a
+      >
+    </div>
+    <div class="hero-institution">
+      <span class="institution-mark">PKT</span
+      ><span
+        ><strong>Poltekkes Kemenkes Tasikmalaya</strong
+        ><small>Mutu terencana · terlaksana · terdokumentasi</small></span
+      >
+    </div>
+  </div>
+  <div class="hero-art" aria-hidden="true">
+    <div class="hero-orbit orbit-one"></div>
+    <div class="hero-orbit orbit-two"></div>
+    <div class="hero-document">
+      <i data-lucide="files"></i><span>REPOSITORI SPMI</span
+      ><strong>{{ total }} dokumen publik</strong>
+    </div>
+    <div class="hero-stamp">PKT<br />SPMI</div>
+  </div>
+</section>
+
+<section
+  class="home-section stats-section"
+  aria-label="Statistik dokumen publik"
+>
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Repositori publik</p>
+      <h2>Dokumen yang dapat diakses</h2>
+    </div>
+    <span class="live-count"><i></i> Data publik saat ini</span>
+  </div>
+  <div class="stats-grid">
+    <article class="stat-tile stat-blue">
+      <span class="stat-icon"><i data-lucide="shield-check"></i></span
+      ><strong data-public-stat="standar_pt"
+        >{{ counts.get('standar-pt', 0) }}</strong
+      ><span>Standar PT</span>
+    </article>
+    <article class="stat-tile stat-green">
+      <span class="stat-icon"><i data-lucide="book-open-check"></i></span
+      ><strong data-public-stat="pedoman">{{ counts.get('pedoman', 0) }}</strong
+      ><span>Pedoman</span>
+    </article>
+    <article class="stat-tile stat-orange">
+      <span class="stat-icon"><i data-lucide="list-checks"></i></span
+      ><strong data-public-stat="sop">{{ counts.get('sop', 0) }}</strong
+      ><span>SOP</span>
+    </article>
+    <article class="stat-tile stat-purple">
+      <span class="stat-icon"><i data-lucide="files"></i></span
+      ><strong data-public-stat="total">{{ total }}</strong
+      ><span>Total dokumen publik</span>
+    </article>
+  </div>
+</section>
+
+<section class="home-section">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Jelajahi repositori</p>
+      <h2>Dokumen berdasarkan jenis</h2>
+    </div>
+    <a class="text-link" href="{{ url_for('user_catalog') }}"
+      >Semua dokumen <i data-lucide="arrow-right"></i
+    ></a>
+  </div>
+  <div class="category-grid">
+    <a
+      class="category-tile category-blue"
+      href="{{ url_for('user_standar_pt') }}"
+      ><span class="category-icon"><i data-lucide="shield-check"></i></span
+      ><span class="category-count"
+        >{{ counts.get('standar-pt', 0) }} dokumen</span
+      >
+      <h3>Standar Perguruan Tinggi</h3>
+      <p>Standar mutu yang dipublikasikan untuk sivitas akademika.</p>
+      <span class="category-action"
+        >Lihat dokumen <i data-lucide="arrow-up-right"></i></span
+    ></a>
+    <a class="category-tile category-green" href="{{ url_for('user_pedoman') }}"
+      ><span class="category-icon"><i data-lucide="book-open-check"></i></span
+      ><span class="category-count"
+        >{{ counts.get('pedoman', 0) }} dokumen</span
+      >
+      <h3>Pedoman</h3>
+      <p>Acuan pelaksanaan standar mutu institusi.</p>
+      <span class="category-action"
+        >Lihat dokumen <i data-lucide="arrow-up-right"></i></span
+    ></a>
+    <a class="category-tile category-orange" href="{{ url_for('user_sop') }}"
+      ><span class="category-icon"><i data-lucide="list-checks"></i></span
+      ><span class="category-count">{{ counts.get('sop', 0) }} dokumen</span>
+      <h3>SOP</h3>
+      <p>Prosedur operasional yang tersedia untuk diakses.</p>
+      <span class="category-action"
+        >Lihat dokumen <i data-lucide="arrow-up-right"></i></span
+    ></a>
+  </div>
+</section>
+
+<section class="home-section latest-section">
+  <div class="section-heading">
+    <div>
+      <p class="eyebrow">Pembaruan repositori</p>
+      <h2>Dokumen terbaru</h2>
+    </div>
+    <a class="text-link" href="{{ url_for('user_catalog') }}"
+      >Buka katalog <i data-lucide="arrow-right"></i
+    ></a>
+  </div>
+  <div class="latest-list" id="publicLatestDocuments">
+    {% if documents %} {% for document in documents %}
+    <article class="latest-row">
+      <span class="file-type-mark"
+        >{{ document.file_format or document.type[:3]|upper }}</span
+      >
+      <div class="latest-info">
+        <a href="{{ url_for('user_document_detail', document_id=document.id) }}"
+          >{{ document.name }}</a
+        ><span
+          >{{ document.code or 'Tanpa kode' }} · {{ document.category or 'Tanpa
+          kategori' }}</span
+        >
+      </div>
+      <time
+        >{{ document.updated_at or document.published_at or 'Tanggal tidak
+        tersedia' }}</time
+      >
+      <div class="latest-actions">
+        <a
+          class="button button-small button-muted"
+          href="{{ url_for('user_document_detail', document_id=document.id) }}"
+          >Detail</a
+        >{% if document.download_allowed %}<a
+          class="icon-action"
+          href="{{ url_for('user_document_download', document_id=document.id) }}"
+          aria-label="Unduh {{ document.name }}"
+          ><i data-lucide="download"></i></a
+        >{% endif %}
+      </div>
+    </article>
+    {% endfor %} {% else %}
+    <div class="empty-state">
+      <span><i data-lucide="folder-open"></i></span>
+      <h3>Belum ada dokumen publik</h3>
+      <p>Dokumen akan tampil setelah dipublikasikan oleh pengelola.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="home-section quick-explore">
+  <div>
+    <p class="eyebrow">Eksplorasi cepat</p>
+    <h2>Temukan dokumen berdasarkan kategori</h2>
+    <p>Kategori hanya ditampilkan jika tersedia pada dokumen publik.</p>
+  </div>
+  <div class="quick-category-list">
+    {% for category in categories %}<a
+      href="{{ url_for('user_catalog') }}?kategori={{ category|urlencode }}"
+      >{{ category }}<i data-lucide="arrow-up-right"></i></a
+    >{% else %}<span class="muted-note">Kategori belum tersedia.</span>{% endfor
+    %}
+  </div>
+</section>
+
+<section class="integration-banner">
+  <div>
+    <p class="eyebrow">Keterhubungan dokumen</p>
+    <h2>Standar PT <span>→</span> Pedoman <span>→</span> SOP</h2>
+    <p>Telusuri relasi dokumen yang dicatat pada sumber data.</p>
+  </div>
+  <a class="button button-dark" href="{{ url_for('user_integration_map') }}"
+    >Lihat Peta Integrasi <i data-lucide="arrow-right"></i
+  ></a>
+</section>
+<div
+  class="visi-misi-overlay"
+  id="visiMisiModal"
+  hidden
+>
+  <section
+    class="visi-misi-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="visiMisiTitle"
+    aria-describedby="visiMisiSubtitle"
+    tabindex="-1"
+  >
+    <button
+      class="visi-misi-close"
+      type="button"
+      aria-label="Tutup pop-up Visi dan Misi"
+      data-visi-misi-close
+    >
+      <i data-lucide="x" aria-hidden="true"></i>
+    </button>
+    <header class="visi-misi-header">
+      <img
+        class="visi-misi-logo"
+        src="{{ url_for('static', path='images/poltekkes-kemenkes-tasikmalaya.png') }}"
+        alt="Poltekkes Kemenkes Tasikmalaya"
+      />
+      <span class="visi-misi-kicker">Sistem Penjaminan Mutu Internal</span>
+      <h2 id="visiMisiTitle">VISI <span>&amp;</span> MISI</h2>
+      <p id="visiMisiSubtitle">POLTEKKES KEMENKES TASIKMALAYA</p>
+    </header>
+    <div class="visi-misi-content">
+      <article class="visi-panel">
+        <div class="visi-misi-section-title">
+          <span class="visi-misi-icon"><i data-lucide="eye" aria-hidden="true"></i></span>
+          <h3>VISI</h3>
+        </div>
+        <blockquote>
+          “Menjadi Institusi Pendidikan Tinggi yang Unggul dan Menghasilkan SDM
+          Kesehatan Berkarakter Mulia, Profesional serta Berdaya Saing Global”
+        </blockquote>
+      </article>
+      <section class="misi-panel" aria-labelledby="misiHeading">
+        <div class="visi-misi-section-title">
+          <span class="visi-misi-icon"><i data-lucide="target" aria-hidden="true"></i></span>
+          <h3 id="misiHeading">MISI</h3>
+        </div>
+        <ol class="misi-list">
+          <li>
+            <span>1</span>
+            <p>
+              Menyelenggarakan pendidikan tinggi kesehatan yang menghasilkan
+              lulusan yang berkarakter mulia, profesional dan berdaya saing
+              global.
+            </p>
+          </li>
+          <li>
+            <span>2</span>
+            <p>
+              Menyelenggarakan penelitian di bidang kesehatan dalam mendukung
+              transformasi kesehatan sesuai dengan perkembangan IPTEKS global.
+            </p>
+          </li>
+          <li>
+            <span>3</span>
+            <p>
+              Menyelenggarakan pengabdian kepada masyarakat terutama dalam
+              mendukung transformasi kesehatan.
+            </p>
+          </li>
+          <li>
+            <span>4</span>
+            <p>
+              Memperkuat digitalisasi kampus dengan fokus pada penggunaan
+              teknologi informasi dan komunikasi untuk meningkatkan layanan
+              akademik serta administrasi.
+            </p>
+          </li>
+          <li>
+            <span>5</span>
+            <p>
+              Mendorong inovasi dalam kewirausahaan yang relevan dengan bidang
+              industri kesehatan.
+            </p>
+          </li>
+          <li>
+            <span>6</span>
+            <p>
+              Mengembangkan tata kelola Perguruan Tinggi yang efektif dan
+              efisien.
+            </p>
+          </li>
+        </ol>
+      </section>
+    </div>
+    <footer class="visi-misi-footer">
+      <span>Poltekkes Kemenkes Tasikmalaya</span>
+      <button class="visi-misi-dismiss" type="button" data-visi-misi-close>
+        Mengerti, tutup
+      </button>
+    </footer>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script defer src="{{ url_for('static', path='js/visi-misi.js') }}"></script>
+{% endblock %}

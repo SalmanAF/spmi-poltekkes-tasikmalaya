@@ -1,0 +1,103 @@
+{% extends "base_user.html" %} {% block title %}Peta Integrasi | SPMI Poltekkes
+Kemenkes Tasikmalaya{% endblock %} {% block content %}
+<section class="page-intro">
+  <div>
+    <p class="eyebrow">Keterhubungan dokumen</p>
+    <h1>Peta Integrasi</h1>
+    <p>Pilih dokumen untuk menelusuri relasi yang tercatat pada data publik.</p>
+  </div>
+</section>
+<section
+  class="map-workspace"
+  id="integrationExplorer"
+  data-documents="{{ (policies + standards + guidelines + procedures + forms + subheadings)|tojson|forceescape }}"
+>
+  <div class="hierarchy-rail" aria-label="Hierarki dokumen">
+    <span>01</span><strong>Kebijakan</strong><i data-lucide="arrow-right"></i
+    ><span>02</span><strong>Standar PT</strong><i data-lucide="arrow-right"></i
+    ><span>03</span><strong>Pedoman</strong><i data-lucide="arrow-right"></i
+    ><span>04</span><strong>SOP</strong><i data-lucide="arrow-right"></i
+    ><span>05</span><strong>Formulir</strong>
+  </div>
+  <div class="map-columns">
+    <section class="map-column">
+      <div class="map-column-head">
+        <span>01</span>
+        <h2>Kebijakan</h2>
+      </div>
+      <label class="visually-hidden" for="policySelect">Pilih Kebijakan</label>
+      <select id="policySelect">
+        <option value="">Pilih Kebijakan</option>
+        {% for document in policies %}
+        <option value="{{ document.id }}">{{ document.name }}</option>
+        {% endfor %}
+      </select>
+      <div class="map-selection" id="policySelection">
+        <p class="muted-note">
+          {% if policies %}Pilih kebijakan untuk melihat standar terkait.{% else %}Belum ada Kebijakan publik.{% endif %}
+        </p>
+      </div>
+    </section>
+    <section class="map-column">
+      <div class="map-column-head">
+        <span>02</span>
+        <h2>Standar PT</h2>
+      </div>
+      <label class="visually-hidden" for="standardSelect">Pilih Standar PT</label
+      ><select id="standardSelect">
+        <option value="">Pilih Standar PT</option>
+        {% for document in standards %}
+        <option value="{{ document.id }}">{{ document.name }}</option>
+        {% endfor %}
+      </select>
+      <div class="map-selection" id="standardSelection">
+        <p class="muted-note">
+          {% if standards %}Pilih standar untuk melihat pedoman terkait.{% else
+          %}Belum ada Standar PT publik.{% endif %}
+        </p>
+      </div>
+    </section>
+    <section class="map-column">
+      <div class="map-column-head">
+        <span>03</span>
+        <h2>Pedoman</h2>
+      </div>
+      <label class="visually-hidden" for="guidelineSelect">Pilih Pedoman</label
+      ><select id="guidelineSelect" disabled>
+        <option value="">Pilih Pedoman terkait</option>
+      </select>
+      <div class="map-selection" id="guidelineSelection">
+        <p class="muted-note">Pilih standar terlebih dahulu.</p>
+      </div>
+    </section>
+    <section class="map-column">
+      <div class="map-column-head">
+        <span>04</span>
+        <h2>SOP</h2>
+      </div>
+      <div class="map-selection" id="procedureSelection">
+        <p class="muted-note">Pilih pedoman untuk melihat SOP terkait.</p>
+      </div>
+    </section>
+    <section class="map-column">
+      <div class="map-column-head">
+        <span>05</span>
+        <h2>Formulir</h2>
+      </div>
+      <div class="map-selection" id="formSelection">
+        <p class="muted-note">Pilih standar yang memiliki formulir terkait.</p>
+      </div>
+    </section>
+  </div>
+  <noscript
+    ><p class="empty-inline">
+      Aktifkan JavaScript untuk menggunakan peta integrasi interaktif.
+    </p></noscript
+  >
+</section>
+{% endblock %} {% block scripts %}
+<script
+  defer
+  src="{{ url_for('static', path='js/peta-integrasi-user.js') }}"
+></script>
+{% endblock %}

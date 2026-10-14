@@ -1,0 +1,140 @@
+{% extends "admin/base.html" %} {% block title %}Perangkat SPMI{% endblock %}
+{% block head %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', path='css/admin-documents.css') }}"
+/>
+{% endblock %} {% block content %}
+<section class="content-section card panel-card integration-admin-panel">
+  <div class="page-header-panel">
+    <div>
+      <p class="eyebrow">Sumber: {{ integration_sheet }}</p>
+      <h2 class="page-title">Perangkat SPMI</h2>
+      <p class="muted-note">
+        Judul, subjudul, nomor dokumen, PIC, dan tautan mengikuti isi sheet
+        Integrasi Standar {{ integration_year }}.
+      </p>
+    </div>
+    <div class="summary-badge">
+      Total: <strong>{{ integration_count }}</strong> baris dokumen
+    </div>
+  </div>
+
+  {% if standalone_documents %}
+  <section class="integration-admin-group">
+    <div class="integration-admin-group-head">
+      <div>
+        <p class="eyebrow">Dokumen umum</p>
+        <h3>Kebijakan dan pedoman</h3>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Judul sesuai sheet</th>
+            <th>Nomor dokumen</th>
+            <th>PIC</th>
+            <th>Status</th>
+            <th>Dokumen</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for document in standalone_documents %}
+          <tr>
+            <td>
+              <strong>{{ document.judul }}</strong>
+              <small class="integration-admin-kind">{{ document.kategori }}</small>
+            </td>
+            <td>{{ document.no_dokumen }}</td>
+            <td>{{ document.pic or "—" }}</td>
+            <td>
+              <span class="document-status {{ 'public' if document.status == 'publik' else 'private' }}">
+                {{ document.status }}
+              </span>
+            </td>
+            <td>
+              {% if document.file_url %}
+              <a href="{{ document.file_url }}" target="_blank" rel="noopener noreferrer">Buka dokumen</a>
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+
+  {% for group in standard_groups %}
+  <section class="integration-admin-group">
+    <div class="integration-admin-group-head">
+      <div>
+        <p class="eyebrow">
+          {{ group.standard.subjudul or "Standar PT" }} · {{ group.standard.tahun_integrasi }}
+        </p>
+        <h3>{{ group.standard.judul }}</h3>
+        <p class="muted-note">
+          Nomor: {{ group.standard.no_dokumen }} · PIC: {{ group.standard.pic or "—" }}
+        </p>
+      </div>
+      <div class="integration-admin-standard-link">
+        {% if group.standard.file_url %}
+        <a href="{{ group.standard.file_url }}" target="_blank" rel="noopener noreferrer">Buka dokumen Standar</a>
+        {% endif %}
+        <span class="document-status {{ 'public' if group.standard.status == 'publik' else 'private' }}">
+          {{ group.standard.status }}
+        </span>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Judul / subjudul sesuai sheet</th>
+            <th>Nomor dokumen</th>
+            <th>PIC</th>
+            <th>Status</th>
+            <th>Dokumen</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if group.documents %}
+          {% for document in group.documents %}
+          <tr>
+            <td>
+              <strong>{{ document.judul }}</strong>
+              <small class="integration-admin-kind">Subjudul · {{ document.kategori }}</small>
+            </td>
+            <td>{{ document.no_dokumen }}</td>
+            <td>{{ document.pic or "—" }}</td>
+            <td>
+              <span class="document-status {{ 'public' if document.status == 'publik' else 'private' }}">
+                {{ document.status }}
+              </span>
+            </td>
+            <td>
+              {% if document.file_url %}
+              <a href="{{ document.file_url }}" target="_blank" rel="noopener noreferrer">Buka dokumen</a>
+              {% else %}—{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+          {% else %}
+          <tr>
+            <td colspan="5">Tidak ada subjudul atau dokumen turunan pada sheet.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endfor %}
+
+  {% if not integration_count %}
+  <p class="admin-feedback" role="status">
+    Belum ada data Integrasi Standar {{ integration_year }}. Jalankan impor workbook untuk memuat data sheet.
+  </p>
+  {% endif %}
+</section>
+{% endblock %}

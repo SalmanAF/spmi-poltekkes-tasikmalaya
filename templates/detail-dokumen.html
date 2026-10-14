@@ -1,0 +1,200 @@
+{% extends "base_user.html" %} {% block title %}{{ document.judul }} | Dokumen
+SPMI{% endblock %} {% block content %}
+<section class="detail-page">
+  <nav class="document-breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ url_for('user_home') }}"><i data-lucide="house"></i>Beranda</a>
+    <i data-lucide="chevron-right" aria-hidden="true"></i>
+    <a href="{{ url_for('user_catalog') }}">Dokumen Peraturan</a>
+    <i data-lucide="chevron-right" aria-hidden="true"></i>
+    <span>{{ document.no_dokumen or document.id }}</span>
+  </nav>
+  <div class="detail-heading">
+    <div>
+      <p class="eyebrow">{{ document.kategori }}</p>
+      <h1>{{ document.judul }}</h1>
+      <p class="detail-code">
+        {{ document.no_dokumen or document.id }} <span>·</span> {{
+        document.kategori }}
+        <span class="access-badge">Publik</span>
+      </p>
+    </div>
+    <div class="detail-actions">
+      {% if document.download_allowed %}<a
+        class="button button-dark"
+        href="{{ url_for('user_document_download', document_id=document.id) }}"
+        ><i data-lucide="download"></i> Unduh</a
+      >{% endif %}{% if document.tipe_sumber == 'drive_link' or
+      (document.file_format == 'PDF' and document.has_file) %}<a
+        class="button button-muted"
+        href="#document-preview"
+        ><i data-lucide="book-open"></i> Baca</a
+      >{% elif document.download_allowed %}<a
+        class="button button-muted"
+        href="{{ url_for('user_document_download', document_id=document.id) }}"
+        ><i data-lucide="book-open"></i> Baca</a
+      >{% else %}<a class="button button-muted" href="#metadata-table"
+        ><i data-lucide="file-text"></i> Detail</a
+      >{% endif %}
+    </div>
+  </div>
+  <div class="detail-columns">
+    <article class="detail-main">
+      <section class="detail-section metadata-section">
+        <h2>Tinjauan</h2>
+        <div
+          class="metadata-table"
+          id="metadata-table"
+          role="table"
+          aria-label="Informasi dokumen"
+        >
+          <div role="row">
+            <strong role="rowheader">Tipe</strong
+            ><span role="cell"
+              >{{ {'standar-pt':'Standar Perguruan
+              Tinggi','pedoman':'Pedoman','sop':'SOP'}.get(document.type,
+              document.type) }}</span
+            >
+          </div>
+          <div role="row">
+            <strong role="rowheader">Judul</strong
+            ><span role="cell">{{ document.judul }}</span>
+          </div>
+          <div role="row">
+            <strong role="rowheader">Unit penanggung jawab</strong
+            ><span role="cell">{{ document.unit or 'Tidak tersedia' }}</span>
+          </div>
+          <div role="row">
+            <strong role="rowheader">Nomor dokumen</strong
+            ><span role="cell">{{ document.no_dokumen or document.id }}</span>
+          </div>
+          <div role="row">
+            <strong role="rowheader">Jenis/bentuk dokumen</strong
+            ><span role="cell"
+              >{{ document.category or 'Tidak tersedia' }}</span
+            >
+          </div>
+          <div role="row">
+            <strong role="rowheader">Versi</strong
+            ><span role="cell">{{ document.version or 'Tidak tersedia' }}</span>
+          </div>
+          <div role="row">
+            <strong role="rowheader">Tanggal publikasi</strong
+            ><span role="cell"
+              >{{ document.published_at or 'Tidak tersedia' }}</span
+            >
+          </div>
+          <div role="row">
+            <strong role="rowheader">Pembaruan terakhir</strong
+            ><span role="cell"
+              >{{ document.updated_at or 'Tidak tersedia' }}</span
+            >
+          </div>
+          <div role="row">
+            <strong role="rowheader">Format file</strong
+            ><span role="cell"
+              >{{ document.file_format or 'File belum tersedia' }}</span
+            >
+          </div>
+          <div role="row">
+            <strong role="rowheader">Lampiran</strong
+            ><span role="cell"
+              >{% if document.has_file %}{{ document.file_format }}{% else %}-{%
+              endif %}</span
+            >
+          </div>
+        </div>
+      </section>
+    </article>
+    <aside class="detail-sidebar">
+      <section class="side-panel qr-panel">
+        <h2>Akses via QR Code</h2>
+        <p>Pindai kode untuk membuka halaman dokumen ini.</p>
+        <div class="qr-frame">
+          <div
+            id="documentQr"
+            data-qr-url="{{ request.url }}"
+            aria-label="QR code halaman dokumen"
+          ></div>
+        </div>
+        {% if document.is_downloadable %}<a
+          class="button button-teal"
+          href="{{ url_for('user_document_download', document_id=document.id) }}"
+          ><i data-lucide="download"></i> Unduh Dokumen</a
+        >{% else %}<span class="muted-note">Unduhan tidak diizinkan.</span>{%
+        endif %}
+      </section>
+      <section class="side-panel preview-side">
+        <div class="side-panel-heading">
+          <h2>Pratinjau</h2>
+          {% if document.file_format == 'PDF' and document.has_file %}<a
+            class="text-link"
+            href="{{ url_for('user_document_preview', document_id=document.id) }}"
+            target="_blank"
+            rel="noopener"
+            >Layar penuh</a
+          >{% endif %}
+        </div>
+        {% if document.tipe_sumber == 'drive_link' %}<iframe
+          id="document-preview"
+          title="Pratinjau {{ document.judul }}"
+          src="{{ document.preview_url }}"
+        ></iframe
+        >{% elif document.file_format == 'PDF' and document.has_file %}<iframe
+          id="document-preview"
+          title="Pratinjau {{ document.judul }}"
+          src="{{ url_for('user_document_preview', document_id=document.id) }}"
+        ></iframe
+        >{% elif document.has_file %}
+        <div class="preview-unavailable">
+          <i data-lucide="file-check-2"></i
+          ><span
+            >Pratinjau tidak tersedia untuk format {{ document.file_format
+            }}.</span
+          >
+        </div>
+        {% else %}
+        <div class="preview-unavailable">
+          <i data-lucide="file-question"></i
+          ><span>File dokumen belum tersedia.</span>
+        </div>
+        {% endif %}
+      </section>
+      <section class="side-panel abstract-panel">
+        <h2>Sumber dokumen</h2>
+        <p>{{ document.file_url }}</p>
+      </section>
+      <section class="side-panel share-panel">
+        <h2>Bagikan</h2>
+        <button
+          class="share-button"
+          type="button"
+          data-share-url="{{ request.url }}"
+        >
+          <i data-lucide="share-2"></i> Bagikan Dokumen
+        </button>
+      </section>
+      <section class="detail-section relation-panel">
+        <h2>Relasi dokumen</h2>
+        {% if related %}
+        <ul class="related-list">
+          {% for item in related %}
+          <li>
+            <span
+              >{{ {'standar-pt':'Standar
+              PT','pedoman':'Pedoman','sop':'SOP'}.get(item.type, item.type)
+              }}</span
+            ><a
+              href="{{ url_for('user_document_detail', document_id=item.id) }}"
+              >{{ item.name }}</a
+            >
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted-note">Relasi dokumen belum dicatat pada sumber data.</p>
+        {% endif %}
+      </section>
+    </aside>
+  </div>
+</section>
+{% endblock %}

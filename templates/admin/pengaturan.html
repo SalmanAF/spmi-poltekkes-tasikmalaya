@@ -1,0 +1,190 @@
+{% extends "admin/base.html" %} {% block title %}Pengaturan{% endblock %} {%
+block content %}
+<section class="content-section page-header-panel">
+  <div>
+    <p class="eyebrow">Pengaturan Sistem</p>
+    <h2 class="page-title">Pengaturan</h2>
+  </div>
+</section>
+
+<section class="content-section settings-grid">
+  <div class="settings-card card panel-card">
+    <h3>Profil Perguruan Tinggi</h3>
+    <div class="form-grid">
+      <label
+        >Nama Perguruan Tinggi
+        <input type="text" value="Poltekkes Kemenkes Tasikmalaya"
+      /></label>
+      <label>Akreditasi <input type="text" value="Unggul" /></label>
+      <label
+        >Alamat <input type="text" value="Tasikmalaya, Jawa Barat"
+      /></label>
+      <label
+        >Website resmi
+        <input
+          type="text"
+          value=""
+          placeholder="Masukkan website resmi institusi"
+      /></label>
+    </div>
+  </div>
+
+  <div class="settings-card card panel-card">
+    <h3>Pengaturan Sistem</h3>
+    <div class="toggle-list">
+      <label><input type="checkbox" checked /> Otomatis sinkron dokumen</label>
+      <label
+        ><input type="checkbox" checked /> Validasi akses mutasi data</label
+      >
+      <label><input type="checkbox" checked /> Backup harian otomatis</label>
+    </div>
+  </div>
+
+  <div class="settings-card card panel-card">
+    <h3>Pengaturan Notifikasi</h3>
+    <div class="toggle-list">
+      <label><input type="checkbox" checked /> Notifikasi revisi dokumen</label>
+      <label><input type="checkbox" checked /> Notifikasi jadwal audit</label>
+      <label><input type="checkbox" /> Notifikasi update pengguna</label>
+    </div>
+  </div>
+
+  <div class="settings-card card panel-card">
+    <h3>Hak Akses</h3>
+    <div class="toggle-list">
+      <label><input type="checkbox" checked /> Admin</label>
+      <label><input type="checkbox" checked /> Unit</label>
+      <label><input type="checkbox" /> Auditor</label>
+      <label><input type="checkbox" /> Pengguna Umum</label>
+    </div>
+  </div>
+</section>
+
+<section
+  class="content-section card panel-card document-admin-panel"
+  id="documentAdminPanel"
+>
+  <div class="page-header-panel">
+    <div>
+      <p class="eyebrow">Repositori bersama</p>
+      <h2 class="page-title">Kelola Dokumen SPMI</h2>
+    </div>
+    <button class="btn btn-secondary" type="button" id="reloadDocuments">
+      <span data-lucide="refresh-cw"></span> Muat ulang
+    </button>
+  </div>
+  <p class="admin-feedback" id="adminFeedback" role="status" aria-live="polite">
+    Masukkan token admin untuk memuat daftar dokumen.
+  </p>
+  <form
+    id="documentCreateForm"
+    class="document-admin-form"
+    enctype="multipart/form-data"
+  >
+    <label>Judul dokumen<input name="judul" required maxlength="240" /></label>
+    <label
+      >Kategori<select name="kategori" required>
+        <option value="Standar PT">Standar PT</option>
+        <option value="Pedoman">Pedoman</option>
+        <option value="SOP">SOP</option>
+        <option value="Unduhan">Unduhan</option>
+        <option value="Lainnya">Lainnya</option>
+      </select></label
+    >
+    <label
+      >Sumber dokumen<select name="tipe_sumber" id="sourceType">
+        <option value="drive_link">Link Google Drive</option>
+        <option value="local_file">Upload berkas PDF/DOCX</option>
+      </select></label
+    >
+    <label id="driveUrlField"
+      >URL Google Drive<input
+        name="file_url"
+        type="url"
+        placeholder="https://drive.google.com/file/d/..."
+    /></label>
+    <label id="localFileField" hidden
+      >Berkas PDF atau DOCX<input
+        name="file"
+        type="file"
+        accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    /></label>
+    <label
+      >Status<select name="status">
+        <option value="draft">Draft</option>
+        <option value="publik">Publik</option>
+      </select></label
+    >
+    <label class="download-permission"
+      ><input name="is_downloadable" type="checkbox" value="true" /> Izinkan
+      User Mengunduh Dokumen Ini</label
+    >
+    <button class="btn btn-primary" type="submit">
+      <span data-lucide="upload"></span> Simpan Dokumen
+    </button>
+  </form>
+  <div class="table-wrapper">
+    <table class="data-table" id="adminDocumentsTable">
+      <thead>
+        <tr>
+          <th>Judul</th>
+          <th>Kategori</th>
+          <th>Sumber</th>
+          <th>Status</th>
+          <th>Unduh</th>
+          <th>Dibuat</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td colspan="7">
+            Daftar dokumen akan dimuat setelah token admin terverifikasi.
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<dialog class="document-edit-dialog" id="documentEditDialog">
+  <form id="documentEditForm" method="dialog">
+    <h2>Edit metadata dokumen</h2>
+    <input type="hidden" name="id" />
+    <label>Judul dokumen<input name="judul" required maxlength="240" /></label>
+    <label
+      >Kategori<select name="kategori">
+        <option>Standar PT</option>
+        <option>Pedoman</option>
+        <option>SOP</option>
+        <option>Unduhan</option>
+        <option>Lainnya</option>
+      </select></label
+    >
+    <label
+      >Status<select name="status">
+        <option value="publik">Publik</option>
+        <option value="draft">Draft</option>
+      </select></label
+    >
+    <label class="download-permission"
+      ><input name="is_downloadable" type="checkbox" /> Izinkan User Mengunduh
+      Dokumen Ini</label
+    >
+    <div class="dialog-actions">
+      <button class="btn btn-secondary" value="cancel">Batal</button
+      ><button class="btn btn-primary" id="saveDocumentEdit" value="save">
+        Simpan Perubahan
+      </button>
+    </div>
+  </form>
+</dialog>
+{% endblock %} {% block head %}<link
+  rel="stylesheet"
+  href="{{ url_for('static', path='css/admin-documents.css') }}"
+/>{% endblock %} {% block scripts %}
+<script
+  defer
+  src="{{ url_for('static', path='js/admin-documents.js') }}"
+></script>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "admin/base.html" %} {% block title %}Unduhan Dokumen{% endblock %}
+{% block content %}
+<section class="content-section page-header-panel">
+  <div>
+    <p class="eyebrow">Repository Dokumen</p>
+    <h2 class="page-title">Unduhan Dokumen</h2>
+  </div>
+</section>
+
+<section class="content-section card panel-card">
+  <div class="table-toolbar">
+    <div class="search-box">
+      <span data-lucide="search"></span>
+      <input type="text" placeholder="Cari dokumen" aria-label="Cari dokumen" />
+    </div>
+    <div class="chip-group">
+      <span class="chip">Filter: PDF / DOCX / XLSX</span>
+    </div>
+  </div>
+
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Nama Dokumen</th>
+          <th>Jenis</th>
+          <th>Kategori</th>
+          <th>Versi</th>
+          <th>Tanggal</th>
+          <th>Ukuran</th>
+          <th>Status</th>
+          <th>Download</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Standar Pendidikan</td>
+          <td>PDF</td>
+          <td>Standar</td>
+          <td>V1.0</td>
+          <td>2026-08-10</td>
+          <td>2.4 MB</td>
+          <td><span class="status-pill status-green">Aktif</span></td>
+          <td>
+            <button
+              class="btn btn-link"
+              data-action="show-toast"
+              data-message="TODO: file download akan tersedia setelah backend siap."
+            >
+              Download
+            </button>
+          </td>
+        </tr>
+        <tr>
+          <td>Pedoman Mutu Internal</td>
+          <td>DOCX</td>
+          <td>Pedoman</td>
+          <td>V2.1</td>
+          <td>2026-06-24</td>
+          <td>1.8 MB</td>
+          <td><span class="status-pill status-green">Aktif</span></td>
+          <td>
+            <button
+              class="btn btn-link"
+              data-action="show-toast"
+              data-message="TODO: file download akan tersedia setelah backend siap."
+            >
+              Download
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

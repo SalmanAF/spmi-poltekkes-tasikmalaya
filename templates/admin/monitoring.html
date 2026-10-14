@@ -1,0 +1,107 @@
+{% extends "admin/base.html" %}
+{% block title %}Monitoring Implementasi{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/admin-implementation.css') }}" />
+{% endblock %}
+{% block content %}
+<section class="content-section page-header-panel">
+  <div>
+    <p class="eyebrow">Monitoring</p>
+    <h2 class="page-title">Monitoring Implementasi</h2>
+  </div>
+</section>
+
+<section class="content-section summary-grid">
+  <div class="stat-mini blue">
+    <span>Standar PT Publik</span><strong data-admin-stat="standar_pt">0</strong>
+  </div>
+  <div class="stat-mini green">
+    <span>Pedoman Publik</span><strong data-admin-stat="pedoman">0</strong>
+  </div>
+  <div class="stat-mini yellow">
+    <span>SOP Publik</span><strong data-admin-stat="sop">0</strong>
+  </div>
+  <div class="stat-mini teal">
+    <span>Total Dokumen Publik</span><strong data-admin-stat="total">0</strong>
+  </div>
+</section>
+
+<section class="content-section card panel-card">
+  <div class="progress-wrap">
+    <div class="progress-meta">
+      <span>Kelengkapan pengisian narasi PPEPP</span>
+      <strong>{{ implementations | selectattr('ppepp_complete') | list | length }} / {{ implementations | length }} dokumen</strong>
+    </div>
+    <p class="muted-note">
+      Kelengkapan PPEPP hanya menunjukkan tahapan narasi yang telah diisi; ini bukan penanda bahwa kegiatan implementasi telah selesai.
+    </p>
+  </div>
+
+  <div class="monitoring-search-toolbar">
+    <label for="implementationMonitoringSearch">
+      <span data-lucide="search" aria-hidden="true"></span>
+      <input
+        id="implementationMonitoringSearch"
+        type="search"
+        placeholder="Cari dokumen, jenis, unit, PIC, bukti, tanggal, atau catatan..."
+        autocomplete="off"
+      />
+    </label>
+    <p aria-live="polite">
+      Ditampilkan <strong id="implementationMonitoringCount">{{ implementations | length }}</strong>
+      dari <strong>{{ implementations | length }}</strong> dokumen
+    </p>
+  </div>
+
+  <div class="table-wrapper implementation-monitoring-table">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Dokumen</th>
+          <th>Jenis</th>
+          <th>Unit Pelaksana</th>
+          <th>PIC</th>
+          <th>Bentuk Implementasi</th>
+          <th>Bukti Implementasi</th>
+          <th>Tanggal</th>
+          <th>Catatan</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in implementations %}
+        <tr data-monitoring-record>
+          <td>
+            <strong>{{ item.judul }}</strong>
+            {% if item.kode and item.kode != "-" %}<small class="implementation-document-code">{{ item.kode }}</small>{% endif %}
+          </td>
+          <td>{{ item.kategori }}</td>
+          <td>{{ item.unit or "—" }}</td>
+          <td>{{ item.pic or "—" }}</td>
+          <td>
+            <a class="btn btn-primary implementation-ppepp-link" href="/admin/implementasi?document_id={{ item.id | urlencode }}">
+              {% if item.has_ppepp %}Lihat/Edit PPEPP{% else %}Isi PPEPP{% endif %}
+            </a>
+            <small class="implementation-completeness {% if item.ppepp_complete %}is-complete{% endif %}">
+              {% if item.ppepp_complete %}Narasi lima tahap terisi{% else %}Pengisian PPEPP belum lengkap ({{ item.ppepp_count }}/5){% endif %}
+            </small>
+          </td>
+          <td>{{ item.evidence or "—" }}</td>
+          <td>{{ item.implementation_date or "—" }}</td>
+          <td>{{ item.notes or "—" }}</td>
+        </tr>
+        {% else %}
+        <tr data-monitoring-empty>
+          <td colspan="8">Belum ada dokumen terdaftar untuk dimonitor.</td>
+        </tr>
+        {% endfor %}
+        <tr data-monitoring-no-results hidden>
+          <td colspan="8">Tidak ada dokumen yang cocok dengan pencarian.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script defer src="{{ url_for('static', path='js/admin-monitoring-search.js') }}"></script>
+{% endblock %}

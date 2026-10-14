@@ -1,0 +1,103 @@
+{% extends "admin/base.html" %} {% block title %}Dashboard Integrasi Dokumen
+SPMI{% endblock %} {% block content %}
+<section class="content-section dashboard-grid" id="dashboardStats"></section>
+
+<section class="content-section hierarchy-panel">
+  <div class="card panel-card">
+    <div class="section-head">
+      <h3>HIERARKI DOKUMEN SPMI PERGURUAN TINGGI</h3>
+      <p>Keterkaitan dan Alur Penjabaran Dokumen</p>
+    </div>
+
+    <div class="flow-grid">
+      <article class="flow-card blue">
+        <div class="flow-badge"><span data-lucide="shield-check"></span></div>
+        <h4>Standar<br />Perguruan Tinggi</h4>
+        <ul>
+          <li>
+            <strong data-admin-stat="standar_pt">0</strong> dokumen publik
+          </li>
+          <li>Berbasis SN Dikti</li>
+          <li>Menetapkan apa yang harus dicapai</li>
+        </ul>
+        <span class="pill">Why &amp; What</span>
+      </article>
+
+      <article class="flow-card green">
+        <div class="flow-badge"><span data-lucide="book-open"></span></div>
+        <h4>Pedoman</h4>
+        <ul>
+          <li><strong data-admin-stat="pedoman">0</strong> dokumen publik</li>
+          <li>Menjabarkan standar</li>
+          <li>Memberi acuan pelaksanaan</li>
+        </ul>
+        <span class="pill">How</span>
+      </article>
+
+      <article class="flow-card orange">
+        <div class="flow-badge"><span data-lucide="settings"></span></div>
+        <h4>SOP</h4>
+        <ul>
+          <li><strong data-admin-stat="sop">0</strong> dokumen publik</li>
+          <li>Prosedur operasional yang rinci</li>
+          <li>Menjamin konsistensi pelaksanaan</li>
+        </ul>
+        <span class="pill">Do</span>
+      </article>
+    </div>
+  </div>
+
+  <div class="retention-box">
+    <h4>Hasil Implementasi</h4>
+    <ul>
+      <li>Tata kelola yang berkualitas</li>
+      <li>Layanan pendidikan yang unggul</li>
+      <li>Peningkatan mutu berkelanjutan</li>
+      <li>Akreditasi yang optimal</li>
+    </ul>
+  </div>
+</section>
+
+<section class="content-section dashboard-bottom">
+  <div class="chart-card">
+    <h3>Peta Integrasi Dokumen</h3>
+    <div class="integration-map">
+      <div class="integration-root">SPMI<br />Perguruan Tinggi</div>
+      <div class="integration-branch">
+        <div class="integration-node integration-node-blue">Standar PT</div>
+        <div class="integration-node integration-node-green">Pedoman</div>
+        <div class="integration-node integration-node-orange">SOP</div>
+        <div class="integration-node integration-node-orange">Formulir</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <h3>Status Kelengkapan Dokumen</h3>
+    <div class="chart-box" style="height: 220px">
+      <canvas id="docStatusChart"></canvas>
+    </div>
+    <div class="status-list">
+      <div class="status-item">
+        <span><span class="status-dot green"></span>Dokumen publik</span
+        ><strong data-admin-stat="total">0</strong>
+      </div>
+      <div class="status-item">
+        <span><span class="status-dot yellow"></span>Draft</span
+        ><strong>—</strong>
+      </div>
+      <div class="status-item">
+        <span><span class="status-dot red"></span>Relasi dokumen</span
+        ><strong>Tidak tersedia</strong>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="content-section chart-card">
+  <h3>Trend Pengembangan Dokumen</h3>
+  <div class="chart-box" style="height: 260px">
+    <canvas id="documentTrendChart"></canvas>
+  </div>
+</section>
+{% endblock %}

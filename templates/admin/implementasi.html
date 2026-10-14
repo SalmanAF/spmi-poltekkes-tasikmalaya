@@ -1,0 +1,120 @@
+{% extends "admin/base.html" %}
+{% block title %}Tahapan PPEPP{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/admin-implementation.css') }}" />
+{% endblock %}
+{% block content %}
+<section class="content-section page-header-panel">
+  <div>
+    <p class="eyebrow">Implementasi Mutu</p>
+    <h2 class="page-title">Tahapan PPEPP</h2>
+  </div>
+</section>
+
+<section class="content-section card panel-card implementation-selector">
+  <label for="implementationDocumentSelect">Pilih dokumen SPMI</label>
+  <select id="implementationDocumentSelect">
+    <option value="">Pilih dokumen yang akan dikelola</option>
+    {% for document in documents %}
+    <option value="{{ document.id }}" {% if selected_document and selected_document.id == document.id %}selected{% endif %}>
+      {{ document.judul }} ({{ document.kategori }})
+    </option>
+    {% endfor %}
+  </select>
+  {% if selected_document %}
+  <p class="implementation-document-identity">
+    Dokumen terpilih:
+    <strong>{{ selected_document.judul }}</strong>
+    <span>{{ selected_document.kategori }}{% if selected_document.kode and selected_document.kode != "-" %} · {{ selected_document.kode }}{% endif %}</span>
+  </p>
+  {% else %}
+  <p class="muted-note">Pilih dokumen untuk membuka formulir PPEPP khusus dokumen tersebut. Data dokumen baru tidak dibuat dari halaman ini.</p>
+  {% endif %}
+</section>
+
+{% if selected_document %}
+<section class="content-section card panel-card implementation-monitoring">
+  <div class="implementation-section-heading">
+    <div>
+      <p class="eyebrow">Informasi Monitoring</p>
+      <h3>Unit pelaksana dan bukti implementasi</h3>
+    </div>
+    <p class="muted-note">Metadata monitoring terpisah dari kelengkapan narasi PPEPP.</p>
+  </div>
+  <div class="implementation-form-grid" id="implementationMonitoringForm" data-document-id="{{ selected_document.id }}">
+    <label>Unit Pelaksana
+      <input name="unit" maxlength="200" value="{{ monitoring_data.unit or '' }}" />
+    </label>
+    <label>PIC
+      <input name="pic" maxlength="200" value="{{ monitoring_data.pic or selected_document.pic or '' }}" />
+    </label>
+    <label>Bukti Implementasi
+      <input name="evidence" maxlength="2000" value="{{ monitoring_data.evidence or '' }}" />
+    </label>
+    <label>Tanggal
+      <input name="implementation_date" type="date" value="{{ monitoring_data.implementation_date or '' }}" />
+    </label>
+    <label class="implementation-notes-field">Catatan
+      <textarea name="notes" rows="2" maxlength="5000">{{ monitoring_data.notes or '' }}</textarea>
+    </label>
+    <div class="implementation-form-actions">
+      <button class="btn btn-primary" type="button" id="saveImplementationMonitoring">Simpan Informasi Monitoring</button>
+      <span class="implementation-feedback" id="implementationMonitoringFeedback" aria-live="polite"></span>
+    </div>
+  </div>
+</section>
+
+<section class="content-section card panel-card ppepp-panel">
+  <div class="implementation-section-heading">
+    <div>
+      <p class="eyebrow">Siklus Mutu</p>
+      <h3>Lima tahapan PPEPP</h3>
+    </div>
+    <p class="ppepp-progress" data-ppepp-completeness>
+      {% if ppepp_complete %}Narasi lima tahap terisi lengkap{% else %}Pengisian PPEPP belum lengkap{% endif %}
+    </p>
+  </div>
+  <p class="muted-note">
+    Isi berdasarkan pelaksanaan dan bukti nyata. Narasi PPEPP yang tersimpan menunjukkan kelengkapan pengisian, bukan bahwa kegiatan telah selesai atau terlaksana.
+  </p>
+  <div class="table-wrapper ppepp-table-wrapper">
+    <table class="data-table ppepp-table">
+      <thead>
+        <tr>
+          <th>Tahapan PPEPP</th>
+          <th>Aktivitas Utama</th>
+          <th>Dokumen yang Digunakan</th>
+          <th>Output yang Dihasilkan</th>
+          <th>Frekuensi</th>
+          <th>Narasi</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for stage in ppepp_stages %}
+        {% set saved = saved_stages.get(stage.key, {}) %}
+        <tr class="ppepp-stage-row" data-stage="{{ stage.key }}" data-exists="{{ 'true' if saved else 'false' }}">
+          <th scope="row" class="ppepp-stage-name">{{ stage.label }}</th>
+          <td><textarea aria-label="{{ stage.label }} - Aktivitas Utama" name="activity" rows="3" maxlength="2000" {% if saved %}disabled{% endif %}>{{ saved.activity or '' }}</textarea></td>
+          <td><textarea aria-label="{{ stage.label }} - Dokumen yang Digunakan" name="documents_used" rows="3" maxlength="2000" {% if saved %}disabled{% endif %}>{{ saved.documents_used or '' }}</textarea></td>
+          <td><textarea aria-label="{{ stage.label }} - Output yang Dihasilkan" name="output" rows="3" maxlength="2000" {% if saved %}disabled{% endif %}>{{ saved.output or '' }}</textarea></td>
+          <td><textarea aria-label="{{ stage.label }} - Frekuensi" name="frequency" rows="3" maxlength="500" {% if saved %}disabled{% endif %}>{{ saved.frequency or '' }}</textarea></td>
+          <td><textarea aria-label="{{ stage.label }} - Narasi" name="narrative" rows="5" maxlength="10000" placeholder="{{ stage.guidance }}" {% if saved %}disabled{% endif %}>{{ saved.narrative or '' }}</textarea></td>
+          <td class="ppepp-actions">
+            <button class="btn btn-primary ppepp-save" type="button" data-action="save" {% if saved %}hidden{% endif %}>Simpan</button>
+            <button class="btn btn-secondary ppepp-edit" type="button" data-action="edit" {% if not saved %}hidden{% endif %}>Edit</button>
+            <button class="btn btn-secondary ppepp-cancel" type="button" data-action="cancel" hidden>Batal</button>
+            <button class="btn btn-danger ppepp-delete" type="button" data-action="delete" {% if not saved %}hidden{% endif %}>Hapus</button>
+            <span class="implementation-feedback" data-stage-feedback aria-live="polite"></span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script defer src="{{ url_for('static', path='js/admin-implementation.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends "admin/base.html" %}
+{% block title %}Laporan{% endblock %}
+{% block content %}
+<section class="content-section page-header-panel">
+  <div>
+    <p class="eyebrow">Laporan Mutu</p>
+    <h2 class="page-title">Laporan</h2>
+  </div>
+  <div class="page-actions">
+    <a class="btn btn-primary" href="/api/v1/laporan/export-pdf">Export PDF</a>
+    <a class="btn btn-secondary" href="/api/v1/laporan/export-excel"
+      >Export Excel</a
+    >
+    <a
+      class="btn btn-secondary"
+      href="/api/v1/laporan/print"
+      target="_blank"
+      rel="noopener"
+      >Print</a
+    >
+  </div>
+</section>
+
+<section
+  class="content-section report-grid"
+  id="reportDashboard"
+  aria-live="polite"
+>
+  <article class="report-card" data-report="kelengkapan">
+    <h3>Laporan Kelengkapan Dokumen</h3>
+    <p data-report-summary>Memuat rekap kelengkapan dokumen...</p>
+    <small data-report-detail></small>
+  </article>
+  <article class="report-card" data-report="integrasi">
+    <h3>Laporan Integrasi</h3>
+    <p data-report-summary>Memuat validasi integrasi...</p>
+    <small data-report-detail></small>
+  </article>
+  <article class="report-card" data-report="implementasi">
+    <h3>Laporan Implementasi</h3>
+    <p data-report-summary>Memuat rekap pelaksanaan PPEPP...</p>
+    <small data-report-detail></small>
+  </article>
+  <article class="report-card" data-report="revisi">
+    <h3>Laporan Revisi</h3>
+    <p data-report-summary>Memuat status masa berlaku dan revisi...</p>
+    <small data-report-detail></small>
+  </article>
+  <article class="report-card" data-report="perkembangan">
+    <h3>Laporan Perkembangan Dokumen</h3>
+    <p data-report-summary>Memuat tren pencatatan dokumen...</p>
+    <small data-report-detail></small>
+  </article>
+</section>
+{% endblock %}
+{% block scripts %}
+<script
+  defer
+  src="{{ url_for('static', path='js/admin-reports.js') }}"
+></script>
+{% endblock %}

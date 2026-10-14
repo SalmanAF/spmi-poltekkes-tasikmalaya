@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b2942" />
+    <title>Login Admin | SPMI Poltekkes Tasikmalaya</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/auth.css') }}" />
+  </head>
+  <body class="auth-page">
+    <main class="auth-layout">
+      <section class="auth-brand-panel">
+        <img
+          class="auth-logo"
+          src="{{ url_for('static', path='images/poltekkes-kemenkes-tasikmalaya.png') }}"
+          alt="Logo Poltekkes Kemenkes Tasikmalaya"
+        />
+        <p class="auth-eyebrow">Sistem Penjaminan Mutu Internal</p>
+        <h1>SPMI Poltekkes Kemenkes Tasikmalaya</h1>
+        <p class="auth-intro">
+          Portal pengelolaan dokumen dan informasi penjaminan mutu internal.
+        </p>
+        <div class="auth-brand-footer">
+          <span>Mutu Terencana</span><span aria-hidden="true">·</span>
+          <span>Terlaksana</span><span aria-hidden="true">·</span>
+          <span>Berkelanjutan</span>
+        </div>
+      </section>
+
+      <section class="auth-form-panel" aria-labelledby="login-title">
+        <div class="auth-form-wrap">
+          <p class="auth-eyebrow">Area Administrator</p>
+          <h2 id="login-title">Masuk ke akun admin</h2>
+          <p class="auth-subtitle">Masuk untuk melanjutkan ke dashboard admin.</p>
+
+          {% if message %}
+          <div class="auth-alert auth-alert-success" role="status">{{ message }}</div>
+          {% endif %}
+          {% if error %}
+          <div class="auth-alert auth-alert-error" role="alert">{{ error }}</div>
+          {% endif %}
+
+          <form class="auth-form" method="post" action="/admin/login">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+            <label for="username_or_email">Username atau email</label>
+            <input
+              id="username_or_email"
+              name="username_or_email"
+              type="text"
+              autocomplete="username"
+              required
+              maxlength="254"
+              value="{{ username_or_email or '' }}"
+              placeholder="Masukkan username atau email"
+            />
+
+            <label for="password">Password</label>
+            <div class="password-field">
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                required
+                maxlength="128"
+                placeholder="Masukkan password"
+              />
+              <button
+                class="password-toggle"
+                type="button"
+                data-password-toggle="password"
+                aria-label="Tampilkan password"
+                aria-pressed="false"
+              >Lihat</button>
+            </div>
+
+            <button class="auth-submit" type="submit">Login</button>
+          </form>
+
+          <p class="auth-switch">
+            Belum memiliki akun admin? <a href="/admin/register">Registrasi</a>
+          </p>
+          {% if setup_available %}
+          <p class="auth-setup-link"><a href="/admin/setup">Setup administrator pertama</a></p>
+          {% endif %}
+          <a class="auth-home-link" href="/">Kembali ke halaman utama</a>
+        </div>
+      </section>
+    </main>
+    <script defer src="{{ url_for('static', path='js/auth.js') }}"></script>
+  </body>
+</html>

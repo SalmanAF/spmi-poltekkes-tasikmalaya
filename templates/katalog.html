@@ -1,0 +1,159 @@
+{% extends "base_user.html" %} {% block title %}{% if active_page == 'kebijakan'
+%}Kebijakan{% elif active_page == 'standar-pt' %}Standar PT{% elif active_page
+== 'pedoman' %}Pedoman{% elif active_page == 'sop' %}SOP{% elif active_page ==
+'formulir' %}Formulir{% elif active_page == 'unduhan' %}Pusat Unduhan{% else
+%}Katalog Dokumen{% endif %} | SPMI Poltekkes Kemenkes Tasikmalaya{% endblock %}
+{% block content %}
+<section class="page-intro">
+  <div>
+    <p class="eyebrow">Repositori dokumen publik</p>
+    <h1>
+      {% if active_page == 'kebijakan' %}Kebijakan{% elif active_page ==
+      'standar-pt' %}Standar Perguruan Tinggi{% elif active_page == 'pedoman'
+      %}Pedoman{% elif active_page == 'sop' %}SOP{% elif active_page ==
+      'formulir' %}Formulir{% elif active_page == 'unduhan' %}Pusat Unduhan{%
+      else %}Katalog Dokumen{% endif %}
+    </h1>
+    <p>Temukan dokumen berdasarkan nama, kode, kategori, atau unit terkait.</p>
+  </div>
+  <span class="result-total"
+    ><strong>{{ total }}</strong><span>dokumen ditemukan</span></span
+  >
+</section>
+<section class="catalog-layout">
+  <aside class="filter-panel">
+    <h2>Filter dokumen</h2>
+    <form method="get" action="{{ request.url.path }}" id="catalogFilters">
+      <label class="field-label" for="catalogSearch">Pencarian</label>
+      <div class="search-field">
+        <i data-lucide="search"></i
+        ><input
+          id="catalogSearch"
+          name="q"
+          type="search"
+          value="{{ filters.q }}"
+          placeholder="Nama atau kategori..."
+        />
+      </div>
+      {% if active_page not in ['kebijakan', 'standar-pt', 'pedoman', 'sop',
+      'formulir'] %}<label class="field-label" for="typeFilter"
+        >Jenis dokumen</label
+      ><select id="typeFilter" name="jenis">
+        <option value="">Semua jenis</option>
+        <option value="Standar PT">Standar PT</option>
+        <option value="Pedoman">Pedoman</option>
+        <option value="SOP">SOP</option>
+        <option value="Unduhan">Unduhan</option>
+        <option value="Lainnya">Lainnya</option></select
+      >{% endif %}
+      <label class="field-label" for="categoryFilter">Kategori</label
+      ><select id="categoryFilter" name="kategori">
+        <option value="">Semua kategori</option>
+        {% for category in categories %}
+        <option value="{{ category }}">{{ category }}</option>
+        {% endfor %}
+      </select>
+      {% if years %}<label class="field-label" for="yearFilter">Tahun</label
+      ><select id="yearFilter" name="tahun">
+        <option value="">Semua tahun</option>
+        {% for year in years %}
+        <option value="{{ year }}">{{ year }}</option>
+        {% endfor %}</select
+      >{% endif %} {% if active_page == 'unduhan' %}<label
+        class="field-label"
+        for="formatFilter"
+        >Format file</label
+      ><select id="formatFilter" name="format">
+        <option value="">Semua format</option>
+        {% for format in formats %}
+        <option value="{{ format }}">{{ format }}</option>
+        {% endfor %}</select
+      >{% endif %} <label class="field-label" for="sortFilter">Urutkan</label
+      ><select id="sortFilter" name="urut">
+        <option value="terbaru">Terbaru</option>
+        <option value="nama">Nama A–Z</option>
+      </select>
+      <div class="filter-actions">
+        <button class="button button-dark" type="submit">
+          <i data-lucide="list-filter"></i> Terapkan</button
+        ><a class="button button-muted" href="{{ request.url.path }}">Reset</a>
+      </div>
+    </form>
+  </aside>
+  <div class="catalog-results">
+    <div class="results-toolbar">
+      <span>Menampilkan {{ documents|length }} dari {{ total }}</span
+      ><span
+        >{{ 'Hanya dokumen yang dapat diunduh' if active_page == 'unduhan' else
+        'Hanya dokumen berstatus publik' }}</span
+      >
+    </div>
+    <div
+      class="document-grid"
+      id="publicCatalogGrid"
+      data-public-catalog
+      data-downloads-only="{% if active_page == 'unduhan' %}true{% else %}false{% endif %}"
+      data-category="{% if active_page == 'kebijakan' %}Kebijakan{% elif active_page == 'standar-pt' %}Standar PT{% elif active_page == 'pedoman' %}Pedoman{% elif active_page == 'sop' %}SOP{% elif active_page == 'formulir' %}Formulir{% endif %}"
+    >
+      {% if documents %}{% for document in documents %}
+      <article class="document-card">
+        <div class="document-card-top">
+          <span class="file-type-mark"
+            >{{ document.file_format or 'FILE' }}</span
+          ><span class="public-label"><i></i>Publik</span>
+        </div>
+        <p class="document-code">
+          {{ document.kode or document.no_dokumen or document.id }}
+        </p>
+        <h2>
+          <a
+            href="{{ url_for('user_document_detail', document_id=document.id) }}"
+            >{{ document.judul }}</a
+          >
+        </h2>
+        <p class="document-description">{{ document.kategori }}</p>
+        <div class="document-meta"><span>{{ document.tipe_sumber }}</span></div>
+        <div class="document-card-bottom">
+          <time>{{ document.tahun or document.created_at }}</time>
+          <div>
+            <a
+              class="button button-small button-muted"
+              href="{{ url_for('user_document_detail', document_id=document.id) }}"
+              >Lihat detail</a
+            >{% if document.is_downloadable %}<a
+              class="icon-action"
+              href="{{ url_for('user_document_download', document_id=document.id) }}"
+              aria-label="Unduh {{ document.judul }}"
+              ><i data-lucide="download"></i></a
+            >{% endif %}
+          </div>
+        </div>
+      </article>
+      {% endfor %}{% else %}
+      <div class="empty-state">
+        <span><i data-lucide="search-x"></i></span>
+        <h2>Dokumen tidak ditemukan.</h2>
+        <p>Coba ubah kata kunci atau filter yang dipilih.</p>
+        <a class="button button-dark" href="{{ request.url.path }}"
+          >Reset Pencarian</a
+        >
+      </div>
+      {% endif %}
+    </div>
+    {% if page_count > 1 %}
+    <nav class="pagination" aria-label="Paginasi katalog">
+      {% if page > 1 %}<a
+        href="{{ request.url.path }}?q={{ filters.q|urlencode }}&amp;jenis={{ filters.jenis|urlencode }}&amp;kategori={{ filters.kategori|urlencode }}&amp;unit={{ filters.unit|urlencode }}&amp;tahun={{ filters.tahun|urlencode }}&amp;format={{ filters.format|urlencode }}&amp;urut={{ filters.urut|urlencode }}&amp;halaman={{ page - 1 }}"
+        aria-label="Halaman sebelumnya"
+        ><i data-lucide="chevron-left"></i></a
+      >{% endif %}<span>Halaman {{ page }} dari {{ page_count }}</span>{% if
+      page < page_count %}<a
+        href="{{ request.url.path }}?q={{ filters.q|urlencode }}&amp;jenis={{ filters.jenis|urlencode }}&amp;kategori={{ filters.kategori|urlencode }}&amp;unit={{ filters.unit|urlencode }}&amp;tahun={{ filters.tahun|urlencode }}&amp;format={{ filters.format|urlencode }}&amp;urut={{ filters.urut|urlencode }}&amp;halaman={{ page + 1 }}"
+        aria-label="Halaman berikutnya"
+        ><i data-lucide="chevron-right"></i></a
+      >{% endif %}
+    </nav>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,6 @@
+.env
+uploads/admin_auth.sqlite3
+uploads/admin_auth.sqlite3-shm
+uploads/admin_auth.sqlite3-wal
+__pycache__/
+tests/__pycache__/
