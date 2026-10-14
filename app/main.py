@@ -67,9 +67,15 @@ app = FastAPI(
     version="1.0.0",
 )
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-STATIC_DIR = os.path.join(BASE_DIR, "static")
-TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(os.path.dirname(BASE_DIR), "static")
+if not os.path.isdir(STATIC_DIR):
+    STATIC_DIR = os.path.join(BASE_DIR, "static")
+if not os.path.isdir(STATIC_DIR):
+    raise RuntimeError(
+        f"Direktori static tidak ditemukan di root proyek maupun di {BASE_DIR!r}."
+    )
+TEMPLATE_DIR = os.path.join(os.path.dirname(BASE_DIR), "templates")
 logger = logging.getLogger(__name__)
 SESSION_SECRET = os.getenv("SPMI_SESSION_SECRET", "").strip()
 if len(SESSION_SECRET.encode("utf-8")) < 32:
