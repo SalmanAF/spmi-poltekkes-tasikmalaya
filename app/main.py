@@ -68,12 +68,10 @@ app = FastAPI(
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-STATIC_DIR = os.path.join(os.path.dirname(BASE_DIR), "static")
-if not os.path.isdir(STATIC_DIR):
-    STATIC_DIR = os.path.join(BASE_DIR, "static")
+STATIC_DIR = os.path.abspath(os.path.join(os.path.dirname(BASE_DIR), "static"))
 if not os.path.isdir(STATIC_DIR):
     raise RuntimeError(
-        f"Direktori static tidak ditemukan di root proyek maupun di {BASE_DIR!r}."
+        f"Direktori static tidak ditemukan di root proyek: {STATIC_DIR!r}."
     )
 TEMPLATE_DIR = os.path.join(os.path.dirname(BASE_DIR), "templates")
 logger = logging.getLogger(__name__)
