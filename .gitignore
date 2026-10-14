@@ -4,3 +4,14 @@ uploads/admin_auth.sqlite3-shm
 uploads/admin_auth.sqlite3-wal
 __pycache__/
 tests/__pycache__/
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.env
+.env.*
+!.env.example
+.vercel/
+.pytest_cache/
+.idea/
+.vscode/
