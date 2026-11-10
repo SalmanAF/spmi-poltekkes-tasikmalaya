@@ -7,7 +7,9 @@ from pathlib import Path
 from typing import Literal
 from urllib.parse import urlparse
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from app.document_years import infer_document_year
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -35,11 +37,16 @@ def utc_now() -> str:
 
 
 class DocumentRecord(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     id: str = Field(min_length=1, max_length=80)
     judul: str = Field(min_length=1, max_length=240)
     no_dokumen: str = "-"
     kode: str = "-"
     tahun: str = ""
+    document_date: str = ""
+    document_year: str = ""
+    unit: str = ""
     kategori: DocumentCategory
     tipe_sumber: SourceType
     file_url: str = Field(default="", max_length=2048)
@@ -47,6 +54,7 @@ class DocumentRecord(BaseModel):
     status: PublishStatus = "publik"
     is_downloadable: bool = False
     created_at: str
+    updated_at: str = ""
     related_ids: list[str] = Field(default_factory=list)
     standard_id: str = ""
     guideline_id: str = ""
@@ -77,7 +85,15 @@ class DocumentRecord(BaseModel):
         record["no_dokumen"] = code
         record["file_url"] = link
         record["link_download"] = link
-        record.setdefault("tahun", str(record.get("created_at", ""))[:4])
+        document_date = str(record.get("document_date") or "").strip()
+        document_year = infer_document_year(record)
+        record["document_date"] = document_date
+        record["document_year"] = document_year
+        record["tahun"] = document_year
+        record["unit"] = str(record.get("unit") or "")
+        record["updated_at"] = record.get("updated_at") or record.get(
+            "created_at", ""
+        )
         record["document_id"] = record.get("document_id") or record.get("id", "")
         if record.get("kategori") == "SOP":
             parent_id = record.get("guideline_id") or record.get("parent_document_id", "")
@@ -103,7 +119,7 @@ class DocumentRecord(BaseModel):
             raise ValueError("Tahun harus berformat empat digit")
         return value
 
-    @field_validator("berlaku_sampai", "ditinjau_pada")
+    @field_validator("document_date", "berlaku_sampai", "ditinjau_pada")
     @classmethod
     def validate_optional_date(cls, value: str) -> str:
         value = value.strip()
@@ -137,8 +153,9 @@ class DocumentRecord(BaseModel):
                 raise ValueError("Path file lokal harus berada di /uploads/")
         self.kode = self.no_dokumen
         self.link_download = self.file_url
-        if not self.tahun:
-            self.tahun = self.created_at[:4]
+        self.tahun = self.document_year
+        if not self.updated_at:
+            self.updated_at = self.created_at
         return self
 
 
@@ -147,6 +164,9 @@ class DocumentUpdate(BaseModel):
     no_dokumen: str | None = Field(default=None, max_length=120)
     kode: str | None = Field(default=None, max_length=120)
     tahun: str | None = Field(default=None, max_length=4)
+    document_date: str | None = Field(default=None, max_length=10)
+    document_year: str | None = Field(default=None, max_length=4)
+    unit: str | None = Field(default=None, max_length=240)
     file_url: str | None = Field(default=None, max_length=2048)
     link_download: str | None = Field(default=None, max_length=2048)
     drive_link: str | None = Field(default=None, max_length=2048)
@@ -162,7 +182,7 @@ class DocumentUpdate(BaseModel):
     catatan_revisi: str | None = Field(default=None, max_length=5000)
     ditinjau_pada: str | None = Field(default=None, max_length=10)
 
-    @field_validator("berlaku_sampai", "ditinjau_pada")
+    @field_validator("document_date", "berlaku_sampai", "ditinjau_pada")
     @classmethod
     def validate_optional_date(cls, value: str | None) -> str | None:
         if value:
@@ -170,6 +190,15 @@ class DocumentUpdate(BaseModel):
                 date.fromisoformat(value)
             except ValueError as exc:
                 raise ValueError("Tanggal harus berformat YYYY-MM-DD") from exc
+        return value
+
+    @field_validator("document_year", "tahun")
+    @classmethod
+    def validate_document_year(cls, value: str | None) -> str | None:
+        if value is not None:
+            value = value.strip()
+            if value and (len(value) != 4 or not value.isdigit()):
+                raise ValueError("Tahun harus berformat empat digit")
         return value
 
 
@@ -249,10 +278,22 @@ def update_document(document_id: str, changes: dict) -> dict | None:
     records = load_documents()
     for record in records:
         if record["id"] == document_id:
+            changes = dict(changes)
             if changes.get("kode") is not None:
                 changes["no_dokumen"] = changes["kode"]
             elif changes.get("no_dokumen") is not None:
                 changes["kode"] = changes["no_dokumen"]
+            if changes.get("tahun") is not None and changes.get("document_year") is None:
+                changes["document_year"] = changes["tahun"]
+            if changes.get("document_year") is not None:
+                changes["tahun"] = changes["document_year"]
+            if changes.get("document_date") is not None:
+                document_date = str(changes["document_date"]).strip()
+                changes["document_date"] = document_date
+                changes["document_year"] = document_date[:4] if document_date else str(
+                    changes.get("document_year") or ""
+                )
+                changes["tahun"] = changes["document_year"]
             if changes.get("guideline_id") is not None:
                 changes["parent_document_id"] = changes["guideline_id"]
             link = changes.get("link_download") or changes.get("drive_link") or changes.get("file_url")
@@ -261,6 +302,7 @@ def update_document(document_id: str, changes: dict) -> dict | None:
                 changes["link_download"] = link
                 changes.setdefault("tipe_sumber", "local_file" if link.startswith("/uploads/") else "drive_link")
             record.update({key: value for key, value in changes.items() if value is not None})
+            record["updated_at"] = utc_now()
             validated = DocumentRecord.model_validate(record).model_dump()
             _validate_document_relationship(
                 validated,
@@ -353,9 +395,9 @@ def _public_record(record: dict) -> dict:
         "code": record["no_dokumen"],
         "description": "",
         "version": "",
-        "published_at": record["created_at"] if record["status"] == "publik" else "",
-        "updated_at": record["created_at"],
-        "unit": "",
+        "published_at": record["document_date"] if record["status"] == "publik" else "",
+        "updated_at": record["updated_at"],
+        "unit": record.get("unit") or record.get("pic") or "",
         "related_ids": related_ids,
         "standard_id": standard_id,
         "guideline_id": guideline_id,

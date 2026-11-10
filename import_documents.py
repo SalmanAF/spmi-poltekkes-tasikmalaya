@@ -25,6 +25,8 @@ from typing import Any
 from openpyxl import load_workbook
 from openpyxl.cell.cell import Cell
 
+from app.document_years import infer_document_year
+
 
 PROJECT_DIR = Path(__file__).resolve().parent
 DEFAULT_WORKBOOK = PROJECT_DIR / "uploads" / "E- Daftar Dokumen SPMI.xlsx"
@@ -46,6 +48,14 @@ TITLE_HEADERS = {
 }
 NUMBER_HEADERS = ("No Dokumen", "Nomor Dokumen", "No. Dokumen", "Nomor", "No Formulir", "No Dokumen Pedoman", "No Dokumen SOP")
 LINK_HEADERS = ("Link Dokumen", "Tautan Dokumen", "URL Dokumen", "Link", "Link Drive", "Link File")
+DATE_HEADERS = (
+    "Tanggal Dokumen",
+    "Tanggal Penetapan",
+    "Tanggal Penerbitan",
+    "Tanggal Berlaku",
+)
+YEAR_HEADERS = ("Tahun Dokumen", "Tahun Penetapan", "Tahun Penerbitan")
+UNIT_HEADERS = ("Unit Pemilik", "Unit Terkait", "Unit Kerja", "Unit")
 
 
 def normalize_header(value: Any) -> str:
@@ -64,6 +74,9 @@ def find_header_row(sheet, title_aliases: tuple[str, ...]) -> tuple[int, dict[st
         "title": tuple(title_aliases),
         "number": NUMBER_HEADERS,
         "link": LINK_HEADERS,
+        "document_date": DATE_HEADERS,
+        "document_year": YEAR_HEADERS,
+        "unit": UNIT_HEADERS,
     }
     for row_number, row in enumerate(sheet.iter_rows(min_row=1, max_row=min(sheet.max_row, 60), values_only=True), 1):
         columns: dict[str, int] = {}
@@ -171,9 +184,12 @@ def read_form_sheet(
                 "status": "publik",
                 "is_downloadable": downloadable and bool(link),
                 "created_at": TODAY,
-                "tahun": "2025",
             }
         )
+        document_year = infer_document_year(records[-1])
+        if document_year:
+            records[-1]["document_year"] = document_year
+            records[-1]["tahun"] = document_year
     return records
 
 
@@ -272,6 +288,7 @@ def read_integration_sheet(
             "is_downloadable": downloadable and bool(link),
             "created_at": TODAY,
             "tahun": year,
+            "document_year": year,
             "tahun_integrasi": year,
             "standard_id": standard_id,
             "relationship_id": f"REL-{relationship_counter:03d}",
@@ -417,6 +434,7 @@ def read_integration_sheet(
             "is_downloadable": downloadable and bool(link),
             "created_at": TODAY,
             "tahun": year,
+            "document_year": year,
             "tahun_integrasi": year,
             "standard_id": parent_standard_id,
             "guideline_id": guideline_id,
@@ -513,8 +531,25 @@ def read_sheet(
             "is_downloadable": downloadable,
             "created_at": TODAY,
         }
+        if "document_date" in columns:
+            record["document_date"] = clean_text(
+                cell_value(sheet, row_number, columns["document_date"])
+            )
+        if "document_year" in columns:
+            record["document_year"] = clean_text(
+                cell_value(sheet, row_number, columns["document_year"])
+            )
+        if "unit" in columns:
+            record["unit"] = clean_text(
+                cell_value(sheet, row_number, columns["unit"])
+            )
+        document_year = infer_document_year(record)
+        if document_year:
+            record["document_year"] = document_year
+            record["tahun"] = document_year
         if category == "Formulir":
             record["tahun"] = "2025"
+            record["document_year"] = "2025"
         records.append(record)
     return records
 
@@ -578,11 +613,7 @@ def import_documents(workbook_path: Path, output_path: Path, downloadable: bool 
             number = normalise_document_key(
                 clean_text(item.get("no_dokumen") or item.get("kode") or "")
             )
-            year = clean_text(
-                item.get("tahun_integrasi")
-                or item.get("tahun")
-                or str(item.get("created_at") or "")[:4]
-            )
+            year = infer_document_year(item)
             if title:
                 existing_statuses_by_identity.setdefault(
                     (title, number, year), set()
@@ -593,11 +624,7 @@ def import_documents(workbook_path: Path, output_path: Path, downloadable: bool 
             normalise_document_key(
                 clean_text(document.get("no_dokumen") or document.get("kode") or "")
             ),
-            clean_text(
-                document.get("tahun_integrasi")
-                or document.get("tahun")
-                or str(document.get("created_at") or "")[:4]
-            ),
+            infer_document_year(document),
         )
         identity_statuses = existing_statuses_by_identity.get(identity, set())
         preserved_status = next(

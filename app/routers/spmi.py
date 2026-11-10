@@ -86,7 +86,9 @@ def _summary(document: dict) -> DocumentSummary:
         kategori=str(document.get("kategori") or ""),
         kode=str(document.get("kode") or document.get("no_dokumen") or "-"),
         status=document.get("status", "draft"),
-        tahun=str(document.get("tahun") or ""),
+        tahun=str(document.get("document_year") or document.get("tahun") or ""),
+        document_date=str(document.get("document_date") or ""),
+        document_year=str(document.get("document_year") or document.get("tahun") or ""),
         tahun_integrasi=str(document.get("tahun_integrasi") or "") or None,
         has_file=_has_file(document),
         download_allowed=bool(document.get("is_downloadable")),
@@ -760,7 +762,13 @@ async def struktur_dokumen_search(
             if needle
             in " ".join(
                 str(document.get(field) or "")
-                for field in ("judul", "kode", "no_dokumen", "kategori")
+                for field in (
+                    "judul",
+                    "kode",
+                    "no_dokumen",
+                    "kategori",
+                    "unit",
+                )
             ).casefold()
         ]
     if tipe:

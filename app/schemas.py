@@ -19,6 +19,8 @@ class DocumentSummary(BaseModel):
     kode: str = "-"
     status: DocumentStatus
     tahun: str = ""
+    document_date: str = ""
+    document_year: str = ""
     tahun_integrasi: str | None = None
     has_file: bool = False
     download_allowed: bool = False

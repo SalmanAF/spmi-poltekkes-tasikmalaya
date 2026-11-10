@@ -55,7 +55,8 @@
         <tr>
           <th>Kode SOP</th>
           <th>Nama SOP</th>
-          <th>Tahun</th>
+          <th>Tanggal / tahun dokumen</th>
+          <th>Tanggal upload</th>
           <th>Status</th>
           <th>Link dokumen</th>
           <th>Aksi</th>
@@ -63,7 +64,7 @@
       </thead>
       <tbody>
         <tr>
-          <td colspan="6">Memuat data SOP...</td>
+          <td colspan="7">Memuat data SOP...</td>
         </tr>
       </tbody>
     </table>
@@ -78,8 +79,18 @@
     <label>Kode<input name="kode" maxlength="120" /></label>
     <label>Judul dokumen<input name="judul" required maxlength="240" /></label>
     <label
-      >Tahun<input name="tahun" type="number" min="1900" max="2200" required
+      >Tanggal penetapan / penerbitan<input
+        name="document_date"
+        type="date"
     /></label>
+    <label
+      >Tahun dokumen<input
+        name="document_year"
+        type="number"
+        min="1000"
+        max="9999"
+    /></label>
+    <label>Unit terkait<input name="unit" maxlength="240" /></label>
     <label data-parent-link="guideline_id"
       >Pedoman terkait<select name="guideline_id">
         <option value="">Tidak dihubungkan</option>

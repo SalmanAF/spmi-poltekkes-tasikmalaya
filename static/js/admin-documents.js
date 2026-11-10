@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!documents.length) {
       const row = document.createElement("tr");
       const cell = addCell(row, "Belum ada dokumen.");
-      cell.colSpan = 7;
+      cell.colSpan = 8;
       tableBody.append(row);
       return;
     }
@@ -49,6 +49,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const row = document.createElement("tr");
       addCell(row, document.judul);
       addCell(row, document.kategori);
+      addCell(
+        row,
+        document.document_date || document.document_year || document.tahun,
+      );
       addCell(
         row,
         document.tipe_sumber === "drive_link" ? "Google Drive" : "Berkas lokal",
@@ -130,7 +134,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const openEdit = (document) => {
     editForm.elements.id.value = document.id;
     editForm.elements.judul.value = document.judul;
+    editForm.elements.no_dokumen.value =
+      document.no_dokumen || document.kode || "";
     editForm.elements.kategori.value = document.kategori;
+    editForm.elements.document_date.value = document.document_date || "";
+    editForm.elements.document_year.value =
+      document.document_year || document.tahun || "";
+    editForm.elements.document_year.readOnly = Boolean(
+      editForm.elements.document_date.value,
+    );
+    editForm.elements.unit.value = document.unit || document.pic || "";
     editForm.elements.status.value = document.status;
     editForm.elements.is_downloadable.checked = document.is_downloadable;
     editDialog.showModal();
@@ -144,6 +157,14 @@ document.addEventListener("DOMContentLoaded", () => {
     createForm.elements.file_url.required = !isLocal;
     createForm.elements.file.required = isLocal;
   });
+  [createForm, editForm].forEach((form) => {
+    form?.elements.document_date.addEventListener("input", () => {
+      const documentDate = form.elements.document_date.value;
+      form.elements.document_year.readOnly = Boolean(documentDate);
+      if (documentDate)
+        form.elements.document_year.value = documentDate.slice(0, 4);
+    });
+  });
   createForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const formData = new FormData(createForm);
@@ -154,6 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       await api("/api/admin/documents", { method: "POST", body: formData });
       createForm.reset();
+      createForm.elements.document_year.readOnly = false;
       sourceType.dispatchEvent(new Event("change"));
       announce("Dokumen berhasil ditambahkan.");
       await loadDocuments();
@@ -167,7 +189,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const id = editForm.elements.id.value;
     const body = {
       judul: editForm.elements.judul.value,
+      no_dokumen: editForm.elements.no_dokumen.value,
       kategori: editForm.elements.kategori.value,
+      document_date: editForm.elements.document_date.value,
+      document_year: editForm.elements.document_year.value,
+      unit: editForm.elements.unit.value.trim(),
       status: editForm.elements.status.value,
       is_downloadable: editForm.elements.is_downloadable.checked,
     };

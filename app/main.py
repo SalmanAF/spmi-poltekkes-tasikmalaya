@@ -503,6 +503,14 @@ def _user_context(request: Request, active_page: str, **extra: object):
     return {"request": request, "active_page": active_page, **extra}
 
 
+def _document_year_value(document: dict) -> str:
+    for key in ("document_year", "tahun"):
+        year = str(document.get(key) or "").strip()
+        if year:
+            return year
+    return ""
+
+
 def _filtered_documents(
     request: Request,
     kind: str | None = None,
@@ -541,17 +549,26 @@ def _filtered_documents(
             for document in documents
             if query_lower
             in " ".join(
-                str(document[key])
-                for key in ("judul", "kategori", "file_url")
+                str(document.get(key) or "")
+                for key in (
+                    "judul",
+                    "kode",
+                    "no_dokumen",
+                    "kategori",
+                    "unit",
+                    "file_url",
+                )
             ).casefold()
         ]
     if category:
         documents = [document for document in documents if document["kategori"] == category]
+    if unit:
+        documents = [document for document in documents if document.get("unit") == unit]
     if year:
         documents = [
             document
             for document in documents
-            if document.get("tahun", document["created_at"][:4]) == year
+            if _document_year_value(document) == year
         ]
     if file_format:
         documents = [document for document in documents if document["file_format"] == file_format]
@@ -559,7 +576,14 @@ def _filtered_documents(
     if sort == "nama":
         documents.sort(key=lambda document: document["judul"].casefold())
     else:
-        documents.sort(key=lambda document: document["created_at"], reverse=True)
+        documents.sort(
+            key=lambda document: (
+                _document_year_value(document),
+                str(document.get("document_date") or ""),
+                str(document.get("created_at") or ""),
+            ),
+            reverse=True,
+        )
         sort = "terbaru"
 
     try:
@@ -573,13 +597,18 @@ def _filtered_documents(
     start = (page - 1) * page_size
     categories = sorted({document["kategori"] for document in public_documents() if document["kategori"]})
     formats = sorted({Path(document["file_url"]).suffix.lstrip(".").upper() for document in public_documents() if document["tipe_sumber"] == "local_file"})
-    units = []
+    units = sorted(
+        {
+            str(document.get("unit") or "")
+            for document in public_documents()
+            if document.get("unit")
+        }
+    )
     years = sorted(
         {
-            document.get("tahun", value[:4])
+            _document_year_value(document)
             for document in public_documents()
-            for value in (document["created_at"],)
-            if str(document.get("tahun", value[:4])).isdigit()
+            if _document_year_value(document).isdigit()
         },
         reverse=True,
     )
@@ -828,6 +857,10 @@ async def api_create_document(
     judul: str = Form(...),
     kategori: str = Form(...),
     tipe_sumber: str = Form(...),
+    no_dokumen: str = Form("-"),
+    document_date: str = Form(""),
+    document_year: str = Form(""),
+    unit: str = Form(""),
     status: str = Form("draft"),
     is_downloadable: bool = Form(False),
     file_url: str = Form(""),
@@ -872,9 +905,14 @@ async def api_create_document(
         record = DocumentRecord(
             id=document_id,
             judul=judul,
+            no_dokumen=no_dokumen,
+            kode=no_dokumen,
             kategori=kategori,
             tipe_sumber=tipe_sumber,
             file_url=file_url,
+            document_date=document_date,
+            document_year=document_year,
+            unit=unit,
             status=status,
             is_downloadable=is_downloadable,
             created_at=utc_now(),
@@ -933,7 +971,10 @@ async def admin_add_document(payload: dict, _: dict | None = Depends(require_adm
             judul=payload.get("judul", ""),
             no_dokumen=payload.get("kode") or payload.get("no_dokumen") or "-",
             kode=payload.get("kode") or payload.get("no_dokumen") or "-",
-            tahun=str(payload.get("tahun") or created_at[:4]),
+            tahun=str(payload.get("document_year") or payload.get("tahun") or ""),
+            document_date=str(payload.get("document_date") or ""),
+            document_year=str(payload.get("document_year") or payload.get("tahun") or ""),
+            unit=str(payload.get("unit") or ""),
             kategori=category,
             tipe_sumber=source_type,
             file_url=link,

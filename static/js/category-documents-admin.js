@@ -72,7 +72,13 @@ document.addEventListener("DOMContentLoaded", () => {
     form.elements.kategori.value = category;
     form.elements.kode.value = record?.kode || record?.no_dokumen || "";
     form.elements.judul.value = record?.judul || "";
-    form.elements.tahun.value = record?.tahun || new Date().getFullYear();
+    form.elements.document_date.value = record?.document_date || "";
+    form.elements.document_year.value =
+      record?.document_year || record?.tahun || "";
+    form.elements.document_year.readOnly = Boolean(
+      form.elements.document_date.value,
+    );
+    form.elements.unit.value = record?.unit || record?.pic || "";
     form.elements.link_download.value =
       record?.link_download || record?.file_url || "";
     form.elements.status.value = record?.status || "privat";
@@ -107,7 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
           ? `Tidak ada dokumen ${category} yang cocok dengan pencarian.`
           : `Belum ada dokumen ${category}.`,
       );
-      empty.colSpan = 6;
+      empty.colSpan = 7;
       tableBody.append(row);
       return;
     }
@@ -115,7 +121,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const row = document.createElement("tr");
       cell(row, item.kode || item.no_dokumen);
       cell(row, item.judul);
-      cell(row, item.tahun || String(item.created_at || "").slice(0, 4));
+      cell(row, item.document_date || item.document_year || item.tahun);
+      cell(row, item.created_at);
       const isPublic = item.status === "publik";
       const status = cell(row, isPublic ? "Publik" : "Privat");
       status.className = `document-status ${isPublic ? "public" : "private"}`;
@@ -199,7 +206,9 @@ document.addEventListener("DOMContentLoaded", () => {
         item.kode,
         item.no_dokumen,
         item.judul,
-        item.tahun || String(item.created_at || "").slice(0, 4),
+        item.document_date,
+        item.document_year || item.tahun,
+        item.unit,
         item.status,
       ]
         .filter(Boolean)
@@ -211,6 +220,12 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   searchInput?.addEventListener("input", filterDocuments);
+  form.elements.document_date.addEventListener("input", () => {
+    const documentDate = form.elements.document_date.value;
+    form.elements.document_year.readOnly = Boolean(documentDate);
+    if (documentDate)
+      form.elements.document_year.value = documentDate.slice(0, 4);
+  });
   document
     .getElementById("reloadCategoryDocuments")
     .addEventListener("click", loadDocuments);
@@ -226,7 +241,9 @@ document.addEventListener("DOMContentLoaded", () => {
       kode: form.elements.kode.value.trim(),
       judul: form.elements.judul.value.trim(),
       kategori: category,
-      tahun: form.elements.tahun.value,
+      document_date: form.elements.document_date.value,
+      document_year: form.elements.document_year.value,
+      unit: form.elements.unit.value.trim(),
       link_download: form.elements.link_download.value.trim(),
       status: form.elements.status.value,
       ...(category === "Pedoman"

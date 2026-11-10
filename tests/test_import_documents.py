@@ -1,10 +1,11 @@
 import unittest
+from collections import Counter
 from unittest.mock import patch
 
 from openpyxl import Workbook
 
 from app.user_documents import integration_map_documents
-from import_documents import read_integration_sheet
+from import_documents import read_integration_sheet, read_sheet
 
 
 class ImportIntegrationSheetTests(unittest.TestCase):
@@ -88,3 +89,61 @@ class ImportIntegrationSheetTests(unittest.TestCase):
             result = integration_map_documents()
 
         self.assertEqual([document["id"] for document in result], ["2022", "2025"])
+
+    def test_document_import_extracts_title_code_and_explicit_year_metadata(self):
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.title = "Pedoman"
+        sheet.append(
+            [
+                "No",
+                "Judul Pedoman",
+                "No Dokumen",
+                "Unit Pemilik",
+                "Link Dokumen",
+                "Tahun Dokumen",
+            ]
+        )
+        sheet.append(
+            [
+                1,
+                "Panduan Sipenmaru PMDP Tahun 2017",
+                "-",
+                "PMDP",
+                "https://drive.google.com/file/d/example",
+                None,
+            ]
+        )
+        sheet.append(
+            [
+                2,
+                "Pedoman tanpa tahun",
+                "PR:PJM/36/04/02/2018/R2",
+                "Mutu",
+                "https://drive.google.com/file/d/example2",
+                None,
+            ]
+        )
+        sheet.append(
+            [
+                3,
+                "Pedoman dengan tahun eksplisit",
+                "-",
+                "Mutu",
+                "https://drive.google.com/file/d/example3",
+                2019,
+            ]
+        )
+
+        records = read_sheet(
+            workbook,
+            "Pedoman",
+            "Pedoman",
+            "doc-PED",
+            Counter(),
+            True,
+        )
+
+        self.assertEqual([record.get("document_year") for record in records], ["2017", "2018", "2019"])
+        self.assertEqual([record.get("unit") for record in records], ["PMDP", "Mutu", "Mutu"])
+        workbook.close()

@@ -144,12 +144,12 @@
           >{{ document.name }}</a
         ><span
           >{{ document.code or 'Tanpa kode' }} · {{ document.category or 'Tanpa
-          kategori' }}</span
+          kategori' }} · {{ document.document_date or document.document_year or
+          document.tahun or 'Tanggal dokumen tidak tersedia' }}</span
         >
       </div>
       <time
-        >{{ document.updated_at or document.published_at or 'Tanggal tidak
-        tersedia' }}</time
+        >Diunggah {{ document.created_at or 'Tanggal tidak tersedia' }}</time
       >
       <div class="latest-actions">
         <a

@@ -1,189 +1,124 @@
 {% extends "admin/base.html" %} {% block title %}Standar PT{% endblock %} {%
-block content %}
-<section class="content-section page-header-panel">
-  <div>
-    <p class="eyebrow">Standar Perguruan Tinggi</p>
-    <h2 class="page-title">Standar PT</h2>
+block head %}<link
+  rel="stylesheet"
+  href="{{ url_for('static', path='css/admin-documents.css') }}"
+/>
+{% endblock %} {% block content %}
+<section
+  class="content-section card panel-card document-admin-panel category-document-admin"
+  data-category="Standar PT"
+>
+  <div class="page-header-panel">
+    <div>
+      <p class="eyebrow">Repositori bersama</p>
+      <h2 class="page-title">Standar PT</h2>
+    </div>
+    <div class="page-actions">
+      <button
+        class="btn btn-secondary"
+        type="button"
+        id="reloadCategoryDocuments"
+      >
+        <i data-lucide="refresh-cw" aria-hidden="true"></i> Muat ulang
+      </button>
+      <button class="btn btn-primary" type="button" id="addCategoryDocument">
+        <i data-lucide="plus" aria-hidden="true"></i> Tambah Standar
+      </button>
+    </div>
   </div>
-  <div class="page-actions">
-    <button
-      class="btn btn-primary"
-      data-action="open-modal"
-      data-modal="standar-modal"
-    >
-      + Tambah Standar
-    </button>
-    <button
-      class="btn btn-secondary"
-      data-action="show-toast"
-      data-message="Fitur pencarian aktif."
-    >
-      Search
-    </button>
+  <p
+    class="admin-feedback"
+    id="categoryDocumentFeedback"
+    role="status"
+    aria-live="polite"
+  >
+    Memuat data Standar PT...
+  </p>
+  <div class="summary-row">
+    <div class="summary-badge">
+      Ditampilkan: <strong id="categoryDocumentCount">0</strong> dari
+      <span id="categoryDocumentTotal">0</span> Standar PT
+    </div>
   </div>
-</section>
-
-<section class="content-section card panel-card">
+  <label class="category-document-search" for="categoryDocumentSearch">
+    <span data-lucide="search" aria-hidden="true"></span>
+    <input
+      id="categoryDocumentSearch"
+      type="search"
+      placeholder="Cari kode, nama Standar PT, tahun, unit, atau status..."
+      autocomplete="off"
+    />
+  </label>
   <div class="table-wrapper">
-    <table class="data-table">
+    <table class="data-table" id="categoryDocumentsTable">
       <thead>
         <tr>
           <th>Kode</th>
-          <th>Nama Standar</th>
-          <th>Kategori</th>
-          <th>Jumlah Pedoman</th>
-          <th>Jumlah SOP</th>
+          <th>Nama Standar PT</th>
+          <th>Tanggal / tahun dokumen</th>
+          <th>Tanggal upload</th>
           <th>Status</th>
+          <th>Link dokumen</th>
           <th>Aksi</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td>SPM-01</td>
-          <td>Standar Pendidikan</td>
-          <td>Akademik</td>
-          <td>8</td>
-          <td>45</td>
-          <td><span class="status-pill status-green">Lengkap</span></td>
-          <td>
-            <div class="action-buttons">
-              <button
-                class="icon-btn"
-                data-action="show-toast"
-                data-message="Detail standar dibuka."
-                aria-label="Detail"
-              >
-                <span data-lucide="eye"></span>
-              </button>
-              <button
-                class="icon-btn"
-                data-action="open-modal"
-                data-modal="standar-modal"
-                aria-label="Edit"
-              >
-                <span data-lucide="pencil"></span>
-              </button>
-              <button
-                class="icon-btn danger"
-                data-action="show-toast"
-                data-message="Hapus standar belum tersedia."
-                aria-label="Delete"
-              >
-                <span data-lucide="trash-2"></span>
-              </button>
-            </div>
-          </td>
-        </tr>
-        <tr>
-          <td>SPM-02</td>
-          <td>Standar Penelitian</td>
-          <td>Penelitian</td>
-          <td>8</td>
-          <td>38</td>
-          <td><span class="status-pill status-green">Lengkap</span></td>
-          <td>
-            <div class="action-buttons">
-              <button
-                class="icon-btn"
-                data-action="show-toast"
-                data-message="Detail standar dibuka."
-                aria-label="Detail"
-              >
-                <span data-lucide="eye"></span>
-              </button>
-              <button
-                class="icon-btn"
-                data-action="open-modal"
-                data-modal="standar-modal"
-                aria-label="Edit"
-              >
-                <span data-lucide="pencil"></span>
-              </button>
-              <button
-                class="icon-btn danger"
-                data-action="show-toast"
-                data-message="Hapus standar belum tersedia."
-                aria-label="Delete"
-              >
-                <span data-lucide="trash-2"></span>
-              </button>
-            </div>
-          </td>
-        </tr>
-        <tr>
-          <td>SPM-03</td>
-          <td>Standar Pengabdian</td>
-          <td>Pengabdian</td>
-          <td>8</td>
-          <td>36</td>
-          <td><span class="status-pill status-green">Lengkap</span></td>
-          <td>
-            <div class="action-buttons">
-              <button
-                class="icon-btn"
-                data-action="show-toast"
-                data-message="Detail standar dibuka."
-                aria-label="Detail"
-              >
-                <span data-lucide="eye"></span>
-              </button>
-              <button
-                class="icon-btn"
-                data-action="open-modal"
-                data-modal="standar-modal"
-                aria-label="Edit"
-              >
-                <span data-lucide="pencil"></span>
-              </button>
-              <button
-                class="icon-btn danger"
-                data-action="show-toast"
-                data-message="Hapus standar belum tersedia."
-                aria-label="Delete"
-              >
-                <span data-lucide="trash-2"></span>
-              </button>
-            </div>
-          </td>
+          <td colspan="7">Memuat data Standar PT...</td>
         </tr>
       </tbody>
     </table>
   </div>
 </section>
 
-<div class="modal" id="standar-modal" aria-hidden="true">
-  <div class="modal-backdrop" data-dismiss="modal"></div>
-  <div class="modal-card">
-    <div class="modal-header">
-      <h3>Form Standar</h3>
-      <button class="icon-btn" data-dismiss="modal" aria-label="Tutup">
-        <span data-lucide="x"></span>
-      </button>
-    </div>
-    <div class="modal-body">
-      <label>
-        Kode Standar
-        <input type="text" value="SPM-04" />
-      </label>
-      <label>
-        Nama Standar
-        <input type="text" value="Standar Tata Kelola" />
-      </label>
-      <label>
-        Kategori
-        <input type="text" value="Manajemen" />
-      </label>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-secondary" data-dismiss="modal">Batal</button>
+<dialog class="document-edit-dialog" id="categoryDocumentDialog">
+  <form id="categoryDocumentForm" method="dialog">
+    <h2 id="categoryDocumentDialogTitle">Tambah Standar PT</h2>
+    <input type="hidden" name="id" />
+    <input type="hidden" name="kategori" value="Standar PT" />
+    <label>Kode<input name="kode" maxlength="120" /></label>
+    <label>Judul dokumen<input name="judul" required maxlength="240" /></label>
+    <label
+      >Tanggal penetapan<input name="document_date" type="date"
+    /></label>
+    <label
+      >Tahun dokumen<input
+        name="document_year"
+        type="number"
+        min="1000"
+        max="9999"
+    /></label>
+    <label>Unit terkait<input name="unit" maxlength="240" /></label>
+    <label
+      >Link download / Google Drive<input
+        name="link_download"
+        type="url"
+        required
+        maxlength="2048"
+        placeholder="https://drive.google.com/file/d/..."
+    /></label>
+    <label
+      >Status<select name="status">
+        <option value="privat">Privat</option>
+        <option value="publik">Publik</option>
+      </select></label
+    >
+    <div class="dialog-actions">
       <button
-        class="btn btn-primary"
-        data-action="show-toast"
-        data-message="Data standar berhasil disimpan (dummy)."
+        class="btn btn-secondary"
+        type="button"
+        value="cancel"
+        id="cancelCategoryDocument"
       >
-        Simpan
+        Batal
       </button>
+      <button class="btn btn-primary" type="submit">Simpan</button>
     </div>
-  </div>
-</div>
+  </form>
+</dialog>
+{% endblock %} {% block scripts %}
+<script
+  defer
+  src="{{ url_for('static', path='js/category-documents-admin.js') }}"
+></script>
 {% endblock %}

@@ -78,15 +78,21 @@ SPMI{% endblock %} {% block content %}
             ><span role="cell">{{ document.version or 'Tidak tersedia' }}</span>
           </div>
           <div role="row">
-            <strong role="rowheader">Tanggal publikasi</strong
+              <strong role="rowheader">Tanggal dokumen</strong
             ><span role="cell"
-              >{{ document.published_at or 'Tidak tersedia' }}</span
+                >{{ document.document_date or document.document_year or document.tahun or 'Tidak tersedia' }}</span
             >
           </div>
           <div role="row">
-            <strong role="rowheader">Pembaruan terakhir</strong
+              <strong role="rowheader">Tanggal diunggah</strong
             ><span role="cell"
-              >{{ document.updated_at or 'Tidak tersedia' }}</span
+                >{{ document.created_at or 'Tidak tersedia' }}</span
+            >
+            </div>
+            <div role="row">
+              <strong role="rowheader">Pembaruan terakhir</strong
+              ><span role="cell"
+                >{{ document.updated_at or 'Tidak tersedia' }}</span
             >
           </div>
           <div role="row">

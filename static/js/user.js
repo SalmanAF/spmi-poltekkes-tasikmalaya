@@ -56,9 +56,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  const publicCatalog = document.querySelector("[data-public-catalog]");
   const latestDocuments = document.getElementById("publicLatestDocuments");
-  if (publicCatalog || latestDocuments) {
+  if (latestDocuments) {
     fetch("/api/documents/public")
       .then((response) => {
         if (!response.ok) throw new Error("Data dokumen gagal dimuat.");
@@ -66,10 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
       })
       .then((payload) => {
         renderPublicStats(payload.statistics || {});
-        if (publicCatalog)
-          renderPublicCatalog(publicCatalog, payload.documents || []);
-        if (latestDocuments)
-          renderLatestPublicDocuments(latestDocuments, payload.documents || []);
+        renderLatestPublicDocuments(latestDocuments, payload.documents || []);
       })
       .catch(() => showUserToast("Dokumen publik belum dapat dimuat."));
   }
@@ -87,162 +83,6 @@ function makeDocumentLink(documentRecord, text, className = "") {
   link.className = className;
   link.href = `/dokumen/${encodeURIComponent(documentRecord.id)}`;
   link.textContent = text;
-  return link;
-}
-
-function renderPublicCatalog(container, documents) {
-  const query = new URLSearchParams(window.location.search);
-  const typeAliases = {
-    "standar-pt": "Standar PT",
-    pedoman: "Pedoman",
-    sop: "SOP",
-  };
-  const selectedCategory =
-    typeAliases[query.get("jenis")] ||
-    query.get("jenis") ||
-    container.dataset.category ||
-    "";
-  const categoryFilter = query.get("kategori") || "";
-  const search = (query.get("q") || "").toLocaleLowerCase("id");
-  const year = query.get("tahun") || "";
-  const format = (query.get("format") || "").toUpperCase();
-  const downloadsOnly = container.dataset.downloadsOnly === "true";
-  const sort = query.get("urut") || "terbaru";
-  const filtered = documents.filter((item) => {
-    const matchesCategory =
-      !selectedCategory || item.kategori === selectedCategory;
-    const matchesCategoryFilter =
-      !categoryFilter || item.kategori === categoryFilter;
-    const matchesYear = !year || item.created_at.startsWith(year);
-    const matchesFormat = !format || item.file_format === format;
-    const matchesDownload = !downloadsOnly || item.is_downloadable;
-    const matchesSearch =
-      !search ||
-      `${item.judul} ${item.kategori} ${item.id}`
-        .toLocaleLowerCase("id")
-        .includes(search);
-    return (
-      matchesCategory &&
-      matchesCategoryFilter &&
-      matchesYear &&
-      matchesFormat &&
-      matchesDownload &&
-      matchesSearch
-    );
-  });
-  filtered.sort((left, right) =>
-    sort === "nama"
-      ? left.judul.localeCompare(right.judul, "id")
-      : right.created_at.localeCompare(left.created_at),
-  );
-  const pageSize = 12;
-  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const page = Math.min(
-    Math.max(1, Number.parseInt(query.get("halaman") || "1", 10) || 1),
-    pageCount,
-  );
-  const pageItems = filtered.slice((page - 1) * pageSize, page * pageSize);
-  const resultCount = document.querySelector(".result-total strong");
-  if (resultCount) resultCount.textContent = String(filtered.length);
-  const summary = document.querySelector(".results-toolbar span");
-  if (summary)
-    summary.textContent = `Menampilkan ${pageItems.length} dari ${filtered.length}`;
-  container.replaceChildren();
-  if (!pageItems.length) {
-    const empty = document.createElement("div");
-    empty.className = "empty-state";
-    const heading = document.createElement("h2");
-    heading.textContent = "Dokumen tidak ditemukan.";
-    const reset = document.createElement("a");
-    reset.className = "button button-dark";
-    reset.href = window.location.pathname;
-    reset.textContent = "Reset Pencarian";
-    empty.append(heading, reset);
-    container.append(empty);
-  }
-  pageItems.forEach((item) => {
-    const card = document.createElement("article");
-    card.className = "document-card";
-    const code = document.createElement("p");
-    code.className = "document-code";
-    code.textContent = item.id;
-    const title = document.createElement("h2");
-    title.append(makeDocumentLink(item, item.judul));
-    const summaryText = document.createElement("p");
-    summaryText.className = "document-description";
-    summaryText.textContent =
-      item.tipe_sumber === "drive_link"
-        ? "Tersedia melalui Google Drive."
-        : `Berkas ${item.file_format || "tersedia"}.`;
-    const meta = document.createElement("div");
-    meta.className = "document-meta";
-    [item.kategori, item.tipe_sumber, item.created_at].forEach((value) => {
-      const badge = document.createElement("span");
-      badge.textContent = value;
-      meta.append(badge);
-    });
-    const actions = document.createElement("div");
-    actions.className = "document-card-bottom";
-    const previewActions = document.createElement("div");
-    const preview = document.createElement("a");
-    preview.className = "button button-small button-muted";
-    preview.textContent = "Lihat / Preview";
-    preview.href =
-      item.tipe_sumber === "drive_link"
-        ? item.preview_url
-        : `/dokumen/${encodeURIComponent(item.id)}`;
-    if (item.tipe_sumber === "drive_link") {
-      preview.target = "_blank";
-      preview.rel = "noopener noreferrer";
-    }
-    previewActions.append(preview);
-    if (item.is_downloadable) {
-      const download = document.createElement("a");
-      download.className = "button button-small button-dark";
-      download.textContent = "Unduh";
-      download.href = `/dokumen/${encodeURIComponent(item.id)}/unduh`;
-      if (item.tipe_sumber === "drive_link") {
-        download.target = "_blank";
-        download.rel = "noopener noreferrer";
-      }
-      previewActions.append(download);
-    }
-    const date = document.createElement("time");
-    date.textContent = item.created_at;
-    actions.append(date, previewActions);
-    card.append(code, title, summaryText, meta, actions);
-    container.append(card);
-  });
-  let pagination = document.querySelector(".catalog-results .pagination");
-  if (!pagination) {
-    pagination = document.createElement("nav");
-    pagination.className = "pagination";
-    pagination.setAttribute("aria-label", "Paginasi katalog");
-    container.after(pagination);
-  }
-  pagination.replaceChildren();
-  if (pageCount > 1) {
-    if (page > 1)
-      pagination.append(
-        makePageLink(query, page - 1, "Halaman sebelumnya", "‹"),
-      );
-    const pageLabel = document.createElement("span");
-    pageLabel.textContent = `Halaman ${page} dari ${pageCount}`;
-    pagination.append(pageLabel);
-    if (page < pageCount)
-      pagination.append(
-        makePageLink(query, page + 1, "Halaman berikutnya", "›"),
-      );
-  }
-}
-
-function makePageLink(query, page, label, symbol) {
-  const link = document.createElement("a");
-  const params = new URLSearchParams(query);
-  params.set("halaman", String(page));
-  link.href = `${window.location.pathname}?${params.toString()}`;
-  link.setAttribute("aria-label", label);
-  link.textContent = symbol;
   return link;
 }
 
@@ -271,8 +111,15 @@ function renderLatestPublicDocuments(container, documents) {
     const name = makeDocumentLink(item, item.judul);
     name.className = "latest-info";
     const category = document.createElement("span");
-    category.textContent = `${item.kategori} · ${item.created_at}`;
+    category.textContent = `${item.kategori} · ${
+      item.document_date ||
+      item.document_year ||
+      item.tahun ||
+      "Tanggal dokumen tidak tersedia"
+    }`;
     name.append(category);
+    const uploadDate = document.createElement("time");
+    uploadDate.textContent = `Diunggah ${item.created_at || "tidak tersedia"}`;
     const preview = makeDocumentLink(
       item,
       "Detail",
@@ -281,7 +128,7 @@ function renderLatestPublicDocuments(container, documents) {
     const actions = document.createElement("div");
     actions.className = "latest-actions";
     actions.append(preview);
-    if (item.is_downloadable) {
+    if (item.download_allowed) {
       const download = document.createElement("a");
       download.className = "icon-action";
       download.href =
@@ -292,7 +139,7 @@ function renderLatestPublicDocuments(container, documents) {
       download.textContent = "↓";
       actions.append(download);
     }
-    row.append(name, actions);
+    row.append(name, uploadDate, actions);
     list.append(row);
   });
   container.append(list);

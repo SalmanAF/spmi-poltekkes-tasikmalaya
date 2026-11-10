@@ -613,6 +613,15 @@ select:focus-visible {
   color: var(--user-muted);
   font-size: 10px;
 }
+.document-date-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.document-date-meta small {
+  color: var(--user-muted);
+  font-size: 9px;
+}
 .latest-actions,
 .document-card-bottom > div {
   display: flex;
