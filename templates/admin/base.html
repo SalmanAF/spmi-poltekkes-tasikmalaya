@@ -80,6 +80,15 @@
             <span>{{ label }}</span>
           </a>
           {% endfor %}
+          {% if current_user and current_user.role == 'super_admin' %}
+          <a
+            href="/admin/verifikasi-akun"
+            class="nav-item {% if active_page == 'verifikasi-akun' %}active{% endif %}"
+          >
+            <span class="nav-ico" data-lucide="user-check" aria-hidden="true"></span>
+            <span>Verifikasi Akun</span>
+          </a>
+          {% endif %}
         </nav>
 
         <div class="sidebar-quote">

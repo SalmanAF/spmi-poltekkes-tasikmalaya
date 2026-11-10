@@ -7,6 +7,7 @@ block head %}<link
 <section
   class="content-section card panel-card document-admin-panel category-document-admin"
   data-category="Standar PT"
+  data-can-edit="{{ 'true' if current_user.role == 'super_admin' else 'false' }}"
 >
   <div class="page-header-panel">
     <div>
@@ -21,9 +22,11 @@ block head %}<link
       >
         <i data-lucide="refresh-cw" aria-hidden="true"></i> Muat ulang
       </button>
+      {% if current_user.role == 'super_admin' %}
       <button class="btn btn-primary" type="button" id="addCategoryDocument">
         <i data-lucide="plus" aria-hidden="true"></i> Tambah Standar
       </button>
+      {% endif %}
     </div>
   </div>
   <p
@@ -59,18 +62,19 @@ block head %}<link
           <th>Tanggal upload</th>
           <th>Status</th>
           <th>Link dokumen</th>
-          <th>Aksi</th>
+          {% if current_user.role == 'super_admin' %}<th>Aksi</th>{% endif %}
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td colspan="7">Memuat data Standar PT...</td>
+          <td colspan="{{ 7 if current_user.role == 'super_admin' else 6 }}">Memuat data Standar PT...</td>
         </tr>
       </tbody>
     </table>
   </div>
 </section>
 
+{% if current_user.role == 'super_admin' %}
 <dialog class="document-edit-dialog" id="categoryDocumentDialog">
   <form id="categoryDocumentForm" method="dialog">
     <h2 id="categoryDocumentDialogTitle">Tambah Standar PT</h2>
@@ -116,6 +120,7 @@ block head %}<link
     </div>
   </form>
 </dialog>
+{% endif %}
 {% endblock %} {% block scripts %}
 <script
   defer

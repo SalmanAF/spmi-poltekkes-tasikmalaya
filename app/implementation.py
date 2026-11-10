@@ -115,8 +115,76 @@ def _connect() -> sqlite3.Connection:
         );
         CREATE INDEX IF NOT EXISTS idx_ppepp_stages_document
             ON ppepp_stages(document_id);
+        CREATE TABLE IF NOT EXISTS implementation_monitoring_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            document_id TEXT NOT NULL
+                REFERENCES implementation_documents(document_id) ON DELETE CASCADE,
+            unit TEXT NOT NULL,
+            pic TEXT NOT NULL,
+            evidence TEXT NOT NULL,
+            implementation_date TEXT,
+            notes TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            changed_by TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_implementation_monitoring_history_document
+            ON implementation_monitoring_history(document_id, created_at);
+        CREATE TABLE IF NOT EXISTS ppepp_stage_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            document_id TEXT NOT NULL
+                REFERENCES implementation_documents(document_id) ON DELETE CASCADE,
+            stage TEXT NOT NULL,
+            activity TEXT NOT NULL,
+            documents_used TEXT NOT NULL,
+            output TEXT NOT NULL,
+            frequency TEXT NOT NULL,
+            narrative TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            changed_by TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_ppepp_stage_history_document
+            ON ppepp_stage_history(document_id, created_at);
+        CREATE TABLE IF NOT EXISTS implementation_history_migrations (
+            name TEXT PRIMARY KEY,
+            applied_at TEXT NOT NULL
+        );
         """
     )
+    migration_name = "initial-history-snapshots"
+    if connection.execute(
+        "SELECT 1 FROM implementation_history_migrations WHERE name = ?",
+        (migration_name,),
+    ).fetchone() is None:
+        with connection:
+            connection.execute(
+                """
+                INSERT INTO implementation_monitoring_history
+                    (document_id, unit, pic, evidence, implementation_date,
+                     notes, created_at, changed_by)
+                SELECT document_id, unit, pic, evidence, implementation_date,
+                       notes, updated_at, 'Migrasi awal'
+                FROM implementation_monitoring
+                WHERE TRIM(unit) <> '' OR TRIM(evidence) <> ''
+                   OR implementation_date IS NOT NULL OR TRIM(notes) <> ''
+                """
+            )
+            connection.execute(
+                """
+                INSERT INTO ppepp_stage_history
+                    (document_id, stage, activity, documents_used, output,
+                     frequency, narrative, created_at, changed_by)
+                SELECT document_id, stage, activity, documents_used, output,
+                       frequency, narrative, updated_at, 'Migrasi awal'
+                FROM ppepp_stages
+                WHERE TRIM(activity) <> '' OR TRIM(documents_used) <> ''
+                   OR TRIM(output) <> '' OR TRIM(frequency) <> ''
+                   OR TRIM(narrative) <> ''
+                """
+            )
+            connection.execute(
+                "INSERT INTO implementation_history_migrations (name, applied_at) VALUES (?, ?)",
+                (migration_name, _now()),
+            )
     return connection
 
 
@@ -193,7 +261,7 @@ def implementation_overview(documents: list[dict]) -> list[dict]:
             ids,
         ).fetchall()
         stage_rows = connection.execute(
-            f"SELECT document_id, stage, activity, documents_used, output, frequency, narrative "
+            f"SELECT document_id, stage, activity, documents_used, output, frequency, narrative, updated_at "
             f"FROM ppepp_stages WHERE document_id IN ({placeholders})",
             ids,
         ).fetchall()
@@ -205,6 +273,18 @@ def implementation_overview(documents: list[dict]) -> list[dict]:
     for document in documents:
         document_id = str(document.get("id") or "")
         stages = stages_by_id.get(document_id, [])
+        monitoring = monitoring_by_id.get(document_id, {})
+        latest_update_candidates = [
+            str(stage.get("updated_at") or "") for stage in stages
+        ]
+        if any(
+            str(monitoring.get(field) or "").strip()
+            for field in ("unit", "evidence", "implementation_date", "notes")
+        ):
+            latest_update_candidates.append(str(monitoring.get("updated_at") or ""))
+        latest_update = max(
+            (value for value in latest_update_candidates if value), default=""
+        )
         complete_stages = sum(
             all(str(stage.get(field) or "").strip() for field in (
                 "activity",
@@ -218,13 +298,97 @@ def implementation_overview(documents: list[dict]) -> list[dict]:
         overview.append(
             {
                 **document,
-                **monitoring_by_id.get(document_id, {}),
+                **monitoring,
+                "latest_update": latest_update,
                 "ppepp_count": len(stages),
                 "ppepp_complete": complete_stages == len(PPEPP_STAGES),
                 "has_ppepp": bool(stages),
             }
         )
     return overview
+
+
+def implementation_history(
+    documents: list[dict], document_id: str | None = None
+) -> list[dict]:
+    sync_document_registry(documents)
+    parameters: tuple[str, ...] = (document_id,) if document_id else ()
+    filter_clause = "AND h.document_id = ?" if document_id else ""
+    with closing(_connect()) as connection:
+        monitoring_rows = connection.execute(
+            """
+            SELECT h.id, h.document_id, d.title, d.category, h.unit, h.pic,
+                   h.evidence, h.implementation_date, h.notes, h.created_at,
+                   h.changed_by
+            FROM implementation_monitoring_history h
+            JOIN implementation_documents d ON d.document_id = h.document_id
+            WHERE 1 = 1
+            """
+            + filter_clause
+            + " ORDER BY h.created_at DESC, h.id DESC",
+            parameters,
+        ).fetchall()
+        stage_rows = connection.execute(
+            """
+            SELECT h.id, h.document_id, d.title, d.category, h.stage,
+                   h.activity, h.documents_used, h.output, h.frequency,
+                   h.narrative, h.created_at, h.changed_by
+            FROM ppepp_stage_history h
+            JOIN implementation_documents d ON d.document_id = h.document_id
+            WHERE 1 = 1
+            """
+            + filter_clause
+            + " ORDER BY h.created_at DESC, h.id DESC",
+            parameters,
+        ).fetchall()
+
+    history = []
+    for row in monitoring_rows:
+        values = [
+            ("Unit", row["unit"]),
+            ("PIC", row["pic"]),
+            ("Bukti", row["evidence"]),
+            ("Tanggal", row["implementation_date"]),
+            ("Catatan", row["notes"]),
+        ]
+        history.append(
+            {
+                "id": f"monitoring-{row['id']}",
+                "document_id": row["document_id"],
+                "document_title": row["title"],
+                "category": row["category"],
+                "entry_type": "Informasi Monitoring",
+                "values": [(label, value) for label, value in values if value],
+                "created_at": row["created_at"],
+                "changed_by": row["changed_by"],
+            }
+        )
+    stage_labels = {item["key"]: item["label"] for item in PPEPP_STAGES}
+    for row in stage_rows:
+        values = [
+            ("Aktivitas", row["activity"]),
+            ("Dokumen yang digunakan", row["documents_used"]),
+            ("Output", row["output"]),
+            ("Frekuensi", row["frequency"]),
+            ("Narasi", row["narrative"]),
+        ]
+        history.append(
+            {
+                "id": f"ppepp-{row['id']}",
+                "document_id": row["document_id"],
+                "document_title": row["title"],
+                "category": row["category"],
+                "entry_type": f"PPEPP - {stage_labels.get(row['stage'], row['stage'])}",
+                "values": [(label, value) for label, value in values if value],
+                "created_at": row["created_at"],
+                "changed_by": row["changed_by"],
+            }
+        )
+    return sorted(
+        history,
+        key=lambda item: (item["created_at"], item["id"]),
+        reverse=True,
+    )
 
 
 def implementation_stage_counts(documents: list[dict]) -> dict[str, int]:
@@ -270,6 +434,7 @@ def save_stage(
     document_id: str,
     stage: PpeppStage,
     payload: PpeppStageUpdate,
+    changed_by: str = "Admin",
 ) -> dict:
     if not payload.has_content():
         raise ValueError("Isi setidaknya satu informasi pada tahap PPEPP.")
@@ -299,6 +464,25 @@ def save_stage(
                 now,
             ),
         )
+        connection.execute(
+            """
+            INSERT INTO ppepp_stage_history
+                (document_id, stage, activity, documents_used, output,
+                 frequency, narrative, created_at, changed_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                document_id,
+                stage,
+                payload.activity,
+                payload.documents_used,
+                payload.output,
+                payload.frequency,
+                payload.narrative,
+                now,
+                changed_by,
+            ),
+        )
         row = connection.execute(
             "SELECT id, document_id, stage, activity, documents_used, output, frequency, "
             "narrative, updated_at FROM ppepp_stages WHERE document_id = ? AND stage = ?",
@@ -316,7 +500,10 @@ def delete_stage(document_id: str, stage: PpeppStage) -> bool:
     return cursor.rowcount > 0
 
 
-def save_monitoring(document_id: str, payload: MonitoringUpdate) -> dict:
+def save_monitoring(
+    document_id: str, payload: MonitoringUpdate, changed_by: str = "Admin"
+) -> dict:
+    now = _now()
     with closing(_connect()) as connection, connection:
         connection.execute(
             """
@@ -338,7 +525,27 @@ def save_monitoring(document_id: str, payload: MonitoringUpdate) -> dict:
                 payload.evidence,
                 payload.implementation_date.isoformat() if payload.implementation_date else None,
                 payload.notes,
-                _now(),
+                now,
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO implementation_monitoring_history
+                (document_id, unit, pic, evidence, implementation_date,
+                 notes, created_at, changed_by)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                document_id,
+                payload.unit,
+                payload.pic,
+                payload.evidence,
+                payload.implementation_date.isoformat()
+                if payload.implementation_date
+                else None,
+                payload.notes,
+                now,
+                changed_by,
             ),
         )
         row = connection.execute(

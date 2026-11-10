@@ -20,11 +20,14 @@ from app.auth import (
     AccountAlreadyExists,
     SetupUnavailable,
     authenticate_admin,
+    create_admin_account,
     create_initial_admin,
     get_active_admin,
+    get_pending_admins,
     has_active_admin,
     initialize_auth_db,
     register_admin,
+    set_admin_status,
     validate_account_fields,
 )
 from app.implementation import (
@@ -34,6 +37,7 @@ from app.implementation import (
     PpeppStageUpdate,
     delete_stage,
     get_document_implementation,
+    implementation_history,
     implementation_overview,
     save_monitoring,
     save_stage,
@@ -143,16 +147,25 @@ app.add_middleware(
 )
 
 
-def render_page(request: Request, template_name: str, active_page: str, extra_context: dict | None = None):
+def render_page(
+    request: Request,
+    template_name: str,
+    active_page: str,
+    extra_context: dict | None = None,
+    status_code: int = 200,
+):
     context = {
         "request": request,
         "active_page": active_page,
         "admin": getattr(request.state, "admin", None),
+        "current_user": getattr(request.state, "admin", None),
         "csrf_token": get_csrf_token(request),
     }
     if extra_context:
         context.update(extra_context)
-    return templates.TemplateResponse(request, template_name, context)
+    return templates.TemplateResponse(
+        request, template_name, context, status_code=status_code
+    )
 
 
 @app.get("/admin/login", name="admin_login")
@@ -160,7 +173,7 @@ async def admin_login_page(request: Request):
     if current_admin(request):
         return RedirectResponse("/admin/dashboard", status_code=303)
     messages = {
-        "registration-success": "Registrasi berhasil. Silakan login dengan akun admin Anda.",
+        "registration-success": "Registrasi berhasil. Akun Anda menunggu verifikasi administrator sebelum dapat masuk.",
         "logged-out": "Anda telah keluar dari sesi admin.",
     }
     return templates.TemplateResponse(
@@ -194,6 +207,12 @@ async def admin_login(request: Request):
         account = authenticate_admin(identifier, password)
         if account is None:
             error = "Username/email atau password salah."
+        elif account["status"] == "pending":
+            error = "Akun Anda masih menunggu verifikasi dari administrator."
+            account = None
+        elif account["status"] == "rejected":
+            error = "Permohonan akun ditolak. Silakan hubungi administrator."
+            account = None
 
     if account is not None and not error:
         request.session.clear()
@@ -362,6 +381,143 @@ async def admin_logout(request: Request):
     return RedirectResponse("/admin/login?status=logged-out", status_code=303)
 
 
+def require_super_admin(request: Request) -> dict:
+    admin = current_admin(request)
+    if not isinstance(admin, dict) or admin.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Akses Super Admin diperlukan.")
+    return admin
+
+
+READ_ONLY_CATEGORIES = {"Standar PT", "Pedoman", "SOP"}
+
+
+def require_document_write_access(request: Request, category: object) -> None:
+    if category not in READ_ONLY_CATEGORIES:
+        return
+    admin = current_admin(request)
+    if not isinstance(admin, dict) or admin.get("role") != "super_admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Hanya Super Admin yang dapat mengubah Standar PT, Pedoman, atau SOP.",
+        )
+
+
+def document_category(document_id: str) -> str | None:
+    document = next(
+        (item for item in all_documents() if str(item.get("id")) == document_id),
+        None,
+    )
+    return str(document.get("kategori") or "") if document else None
+
+
+@app.get("/admin/verifikasi-akun", name="verifikasi_akun")
+async def admin_verification_page(request: Request):
+    admin = require_super_admin(request)
+    messages = {
+        "approved": "Akun berhasil disetujui.",
+        "rejected": "Permohonan akun berhasil ditolak.",
+        "created": "Akun admin berhasil dibuat dan dapat langsung digunakan.",
+    }
+    return render_page(
+        request,
+        "admin/verifikasi-akun.html",
+        "verifikasi-akun",
+        {
+            "pending_accounts": get_pending_admins(),
+            "verification_message": messages.get(
+                request.query_params.get("status", ""), ""
+            ),
+            "account_error": "",
+            "account_values": {},
+            "roles": (("super_admin", "Super Admin"), ("verifikator", "Verifikator")),
+            "is_super_admin": admin["role"] == "super_admin",
+        },
+    )
+
+
+@app.post("/admin/verifikasi-akun/{account_id}/approve")
+async def approve_admin_account(request: Request, account_id: int):
+    admin = require_super_admin(request)
+    form = await request.form()
+    if not valid_csrf_token(request, str(form.get("csrf_token") or "")):
+        raise HTTPException(status_code=403, detail="Form verifikasi tidak valid.")
+    if not set_admin_status(account_id, "active", int(admin["id"])):
+        raise HTTPException(
+            status_code=404, detail="Permohonan tidak ditemukan atau sudah diproses."
+        )
+    return RedirectResponse("/admin/verifikasi-akun?status=approved", status_code=303)
+
+
+@app.post("/admin/verifikasi-akun/{account_id}/reject")
+async def reject_admin_account(request: Request, account_id: int):
+    require_super_admin(request)
+    form = await request.form()
+    if not valid_csrf_token(request, str(form.get("csrf_token") or "")):
+        raise HTTPException(status_code=403, detail="Form verifikasi tidak valid.")
+    if not set_admin_status(account_id, "rejected"):
+        raise HTTPException(
+            status_code=404, detail="Permohonan tidak ditemukan atau sudah diproses."
+        )
+    return RedirectResponse("/admin/verifikasi-akun?status=rejected", status_code=303)
+
+
+@app.post("/admin/verifikasi-akun/accounts")
+async def create_admin_from_dashboard(request: Request):
+    require_super_admin(request)
+    form = await request.form()
+    values = {
+        "full_name": str(form.get("full_name") or "").strip(),
+        "username": str(form.get("username") or "").strip(),
+        "email": str(form.get("email") or "").strip(),
+        "role": str(form.get("role") or ""),
+    }
+    password = str(form.get("password") or "")
+    confirmation = str(form.get("password_confirmation") or "")
+    error = ""
+    status_code = 400
+    if not valid_csrf_token(request, str(form.get("csrf_token") or "")):
+        error = "Form kedaluwarsa atau tidak valid. Silakan muat ulang halaman."
+        status_code = 403
+    else:
+        error = validate_account_fields(
+            values["full_name"], values["username"], values["email"], password
+        ) or ""
+        if not error and values["role"] not in {"super_admin", "verifikator"}:
+            error = "Hak akses yang dipilih tidak valid."
+        if not error and password != confirmation:
+            error = "Konfirmasi password tidak sama."
+        if not error:
+            try:
+                create_admin_account(
+                    values["full_name"],
+                    values["username"],
+                    values["email"],
+                    password,
+                    values["role"],
+                )
+            except AccountAlreadyExists:
+                error = "Username atau email sudah digunakan."
+            else:
+                return RedirectResponse(
+                    "/admin/verifikasi-akun?status=created", status_code=303
+                )
+    admin = require_super_admin(request)
+    return render_page(
+        request,
+        "admin/verifikasi-akun.html",
+        "verifikasi-akun",
+        {
+            "pending_accounts": get_pending_admins(),
+            "verification_message": "",
+            "account_error": error,
+            "account_values": values,
+            "roles": (("super_admin", "Super Admin"), ("verifikator", "Verifikator")),
+            "is_super_admin": admin["role"] == "super_admin",
+        },
+        status_code=status_code,
+    )
+
+
 @app.get("/admin/")
 @app.get("/admin/dashboard")
 async def dashboard(request: Request):
@@ -443,7 +599,10 @@ async def monitoring(request: Request):
         request,
         "admin/monitoring.html",
         "monitoring",
-        {"implementations": implementation_overview(documents)},
+        {
+            "implementations": implementation_overview(documents),
+            "history": implementation_history(documents),
+        },
     )
 
 
@@ -470,6 +629,9 @@ async def implementasi(request: Request, document_id: str | None = None):
             "monitoring_data": monitoring_data,
             "ppepp_stages": PPEPP_STAGES,
             "saved_stages": stages,
+            "history": implementation_history(documents, document_id)
+            if document_id
+            else [],
             "ppepp_count": len(stages),
             "ppepp_complete": len(stages) == len(PPEPP_STAGES)
             and all(
@@ -785,7 +947,10 @@ async def api_standard_tree(standard_id: str):
 
 
 @app.get("/api/admin/documents")
-async def api_admin_documents(_: dict | None = Depends(require_admin)):
+async def api_admin_documents(
+    _: dict | None = Depends(require_admin),
+):
+    """Return documents to any authenticated admin; writes are role-checked separately."""
     return {"documents": all_documents()}
 
 
@@ -812,29 +977,44 @@ async def api_admin_implementation(
         "document": record["document"],
         "monitoring": record["monitoring"],
         "stages": record["stages"],
+        "history": implementation_history(all_documents(), document_id),
     }
 
 
 @app.put("/api/admin/implementations/{document_id}/monitoring")
+@app.post("/api/admin/implementations/{document_id}/monitoring")
 async def api_update_implementation_monitoring(
     document_id: str,
     payload: MonitoringUpdate,
-    _: dict | None = Depends(require_admin),
+    admin: dict | None = Depends(require_admin),
 ):
     _implementation_record(document_id)
-    return {"monitoring": save_monitoring(document_id, payload)}
+    changed_by = (
+        str(admin.get("full_name") or admin.get("username") or "Admin")
+        if admin
+        else "API token"
+    )
+    return {
+        "monitoring": save_monitoring(document_id, payload, changed_by=changed_by)
+    }
 
 
 @app.put("/api/admin/implementations/{document_id}/ppepp/{stage}")
+@app.post("/api/admin/implementations/{document_id}/ppepp/{stage}")
 async def api_save_ppepp_stage(
     document_id: str,
     stage: PpeppStage,
     payload: PpeppStageUpdate,
-    _: dict | None = Depends(require_admin),
+    admin: dict | None = Depends(require_admin),
 ):
     _implementation_record(document_id)
     try:
-        saved = save_stage(document_id, stage, payload)
+        changed_by = (
+            str(admin.get("full_name") or admin.get("username") or "Admin")
+            if admin
+            else "API token"
+        )
+        saved = save_stage(document_id, stage, payload, changed_by=changed_by)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {"stage": saved}
@@ -854,6 +1034,7 @@ async def api_delete_ppepp_stage(
 
 @app.post("/api/admin/documents", status_code=201)
 async def api_create_document(
+    request: Request,
     judul: str = Form(...),
     kategori: str = Form(...),
     tipe_sumber: str = Form(...),
@@ -867,6 +1048,7 @@ async def api_create_document(
     file: UploadFile | None = File(default=None),
     _: None = Depends(require_admin),
 ):
+    require_document_write_access(request, kategori)
     document_id = f"doc-{uuid.uuid4().hex[:12]}"
     stored_path: Path | None = None
     if tipe_sumber == "local_file":
@@ -925,9 +1107,19 @@ async def api_create_document(
 
 
 @app.put("/api/admin/documents/{document_id}")
-async def api_update_document(document_id: str, update: DocumentUpdate, _: None = Depends(require_admin)):
+async def api_update_document(
+    request: Request,
+    document_id: str,
+    update: DocumentUpdate,
+    _: None = Depends(require_admin),
+):
+    changes = update.model_dump(exclude_unset=True)
+    require_document_write_access(
+        request, document_category(document_id) or changes.get("kategori")
+    )
+    require_document_write_access(request, changes.get("kategori"))
     try:
-        document = update_document(document_id, update.model_dump(exclude_unset=True))
+        document = update_document(document_id, changes)
     except (ValidationError, ValueError, RuntimeError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     if document is None:
@@ -936,7 +1128,10 @@ async def api_update_document(document_id: str, update: DocumentUpdate, _: None 
 
 
 @app.delete("/api/admin/documents/{document_id}")
-async def api_delete_document(document_id: str, _: None = Depends(require_admin)):
+async def api_delete_document(
+    request: Request, document_id: str, _: None = Depends(require_admin)
+):
+    require_document_write_access(request, document_category(document_id))
     try:
         document = remove_document(document_id)
     except RuntimeError as exc:
@@ -947,11 +1142,14 @@ async def api_delete_document(document_id: str, _: None = Depends(require_admin)
 
 
 @app.post("/admin/documents/add", status_code=201)
-async def admin_add_document(payload: dict, _: dict | None = Depends(require_admin)):
+async def admin_add_document(
+    request: Request, payload: dict, _: dict | None = Depends(require_admin)
+):
     link = payload.get("link_download") or payload.get("drive_link") or payload.get("file_url")
     if not link:
         raise HTTPException(status_code=422, detail="Link dokumen wajib diisi")
     category = payload.get("kategori")
+    require_document_write_access(request, category)
     if category not in {
         "Kebijakan",
         "Pedoman",
@@ -992,10 +1190,15 @@ async def admin_add_document(payload: dict, _: dict | None = Depends(require_adm
 
 @app.post("/admin/documents/edit/{document_id}")
 async def admin_edit_document(
+    request: Request,
     document_id: str,
     payload: dict,
     _: dict | None = Depends(require_admin),
 ):
+    require_document_write_access(
+        request, document_category(document_id) or payload.get("kategori")
+    )
+    require_document_write_access(request, payload.get("kategori"))
     try:
         document = update_document(document_id, payload)
     except (ValidationError, ValueError, RuntimeError) as exc:
@@ -1007,12 +1210,14 @@ async def admin_edit_document(
 
 @app.post("/admin/documents/toggle-status/{document_id}")
 async def admin_toggle_document_status(
+    request: Request,
     document_id: str,
     _: dict | None = Depends(require_admin),
 ):
     document = next((item for item in all_documents() if item["id"] == document_id), None)
     if document is None:
         raise HTTPException(status_code=404, detail="Dokumen tidak ditemukan")
+    require_document_write_access(request, document.get("kategori"))
     status = "privat" if document["status"] == "publik" else "publik"
     try:
         updated = update_document(document_id, {"status": status})
@@ -1023,9 +1228,11 @@ async def admin_toggle_document_status(
 
 @app.post("/admin/documents/delete/{document_id}")
 async def admin_delete_document(
+    request: Request,
     document_id: str,
     _: dict | None = Depends(require_admin),
 ):
+    require_document_write_access(request, document_category(document_id))
     try:
         document = remove_document(document_id)
     except RuntimeError as exc:

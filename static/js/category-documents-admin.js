@@ -5,7 +5,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("categoryDocumentForm");
   const feedback = document.getElementById("categoryDocumentFeedback");
   const searchInput = document.getElementById("categoryDocumentSearch");
-  if (!panel || !tableBody || !dialog || !form) return;
+  const canEdit = panel?.dataset.canEdit === "true";
+  if (!panel || !tableBody || (canEdit && (!dialog || !form))) return;
 
   const category = panel.dataset.category;
   let allDocuments = [];
@@ -21,7 +22,11 @@ document.addEventListener("DOMContentLoaded", () => {
         document.querySelector('meta[name="csrf-token"]')?.content || "",
       );
     }
-    const response = await fetch(path, { ...options, headers });
+    const response = await fetch(path, {
+      ...options,
+      headers,
+      credentials: "same-origin",
+    });
     const result = await response.json().catch(() => ({}));
     if (!response.ok)
       throw new Error(result.detail || `Permintaan gagal (${response.status})`);
@@ -52,6 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const populateParentSelect = (fieldName, parentCategory, selectedId = "") => {
+    if (!form) return;
     const select = form.elements[fieldName];
     const label = select?.closest("[data-parent-link]");
     if (!select || !label) return;
@@ -113,7 +119,7 @@ document.addEventListener("DOMContentLoaded", () => {
           ? `Tidak ada dokumen ${category} yang cocok dengan pencarian.`
           : `Belum ada dokumen ${category}.`,
       );
-      empty.colSpan = 7;
+      empty.colSpan = canEdit ? 7 : 6;
       tableBody.append(row);
       return;
     }
@@ -133,50 +139,52 @@ document.addEventListener("DOMContentLoaded", () => {
       anchor.rel = "noopener noreferrer";
       anchor.textContent = "Buka link";
       link.replaceChildren(anchor);
-      const actions = document.createElement("td");
-      actions.className = "document-row-actions";
-      actions.append(
-        actionButton(`Edit ${item.judul}`, "pencil", () => openForm(item)),
-        actionButton(
-          isPublic ? "Jadikan privat" : "Jadikan publik",
-          isPublic ? "eye-off" : "eye",
-          async () => {
-            try {
-              await api(
-                `/admin/documents/toggle-status/${encodeURIComponent(item.id)}`,
-                { method: "POST" },
-              );
-              announce(
-                isPublic
-                  ? "Dokumen sekarang privat."
-                  : "Dokumen sekarang publik.",
-              );
-              await loadDocuments();
-            } catch (error) {
-              announce(error.message, true);
-            }
-          },
-        ),
-        actionButton(
-          `Hapus ${item.judul}`,
-          "trash-2",
-          async () => {
-            if (!window.confirm(`Hapus dokumen “${item.judul}”?`)) return;
-            try {
-              await api(
-                `/admin/documents/delete/${encodeURIComponent(item.id)}`,
-                { method: "POST" },
-              );
-              announce("Dokumen berhasil dihapus.");
-              await loadDocuments();
-            } catch (error) {
-              announce(error.message, true);
-            }
-          },
-          "btn btn-small btn-danger",
-        ),
-      );
-      row.append(actions);
+      if (canEdit) {
+        const actions = document.createElement("td");
+        actions.className = "document-row-actions";
+        actions.append(
+          actionButton(`Edit ${item.judul}`, "pencil", () => openForm(item)),
+          actionButton(
+            isPublic ? "Jadikan privat" : "Jadikan publik",
+            isPublic ? "eye-off" : "eye",
+            async () => {
+              try {
+                await api(
+                  `/admin/documents/toggle-status/${encodeURIComponent(item.id)}`,
+                  { method: "POST" },
+                );
+                announce(
+                  isPublic
+                    ? "Dokumen sekarang privat."
+                    : "Dokumen sekarang publik.",
+                );
+                await loadDocuments();
+              } catch (error) {
+                announce(error.message, true);
+              }
+            },
+          ),
+          actionButton(
+            `Hapus ${item.judul}`,
+            "trash-2",
+            async () => {
+              if (!window.confirm(`Hapus dokumen “${item.judul}”?`)) return;
+              try {
+                await api(
+                  `/admin/documents/delete/${encodeURIComponent(item.id)}`,
+                  { method: "POST" },
+                );
+                announce("Dokumen berhasil dihapus.");
+                await loadDocuments();
+              } catch (error) {
+                announce(error.message, true);
+              }
+            },
+            "btn btn-small btn-danger",
+          ),
+        );
+        row.append(actions);
+      }
       tableBody.append(row);
     });
     window.lucide?.createIcons();
@@ -186,7 +194,10 @@ document.addEventListener("DOMContentLoaded", () => {
     announce("Memuat dokumen...");
     try {
       const result = await api("/api/admin/documents");
-      allDocuments = result.documents || [];
+      if (!Array.isArray(result.documents)) {
+        throw new Error("Format data dokumen dari server tidak valid.");
+      }
+      allDocuments = result.documents;
       populateParentSelect("standard_id", "Standar PT");
       populateParentSelect("guideline_id", "Pedoman");
       categoryDocuments = allDocuments.filter(
@@ -220,58 +231,60 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   searchInput?.addEventListener("input", filterDocuments);
-  form.elements.document_date.addEventListener("input", () => {
-    const documentDate = form.elements.document_date.value;
-    form.elements.document_year.readOnly = Boolean(documentDate);
-    if (documentDate)
-      form.elements.document_year.value = documentDate.slice(0, 4);
-  });
   document
     .getElementById("reloadCategoryDocuments")
-    .addEventListener("click", loadDocuments);
-  document
-    .getElementById("addCategoryDocument")
-    .addEventListener("click", () => openForm());
-  document
-    .getElementById("cancelCategoryDocument")
-    .addEventListener("click", () => dialog.close());
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const payload = {
-      kode: form.elements.kode.value.trim(),
-      judul: form.elements.judul.value.trim(),
-      kategori: category,
-      document_date: form.elements.document_date.value,
-      document_year: form.elements.document_year.value,
-      unit: form.elements.unit.value.trim(),
-      link_download: form.elements.link_download.value.trim(),
-      status: form.elements.status.value,
-      ...(category === "Pedoman"
-        ? { standard_id: form.elements.standard_id.value }
-        : {}),
-      ...(category === "SOP"
-        ? { guideline_id: form.elements.guideline_id.value }
-        : {}),
-    };
-    const id = form.elements.id.value;
-    try {
-      await api(
-        id
-          ? `/admin/documents/edit/${encodeURIComponent(id)}`
-          : "/admin/documents/add",
-        {
-          method: "POST",
-          body: JSON.stringify(payload),
-        },
-      );
-      dialog.close();
-      announce(
-        id ? "Perubahan dokumen disimpan." : "Dokumen berhasil ditambahkan.",
-      );
-      await loadDocuments();
-    } catch (error) {
-      announce(error.message, true);
-    }
-  });
+    ?.addEventListener("click", loadDocuments);
+  if (canEdit && form && dialog) {
+    form.elements.document_date.addEventListener("input", () => {
+      const documentDate = form.elements.document_date.value;
+      form.elements.document_year.readOnly = Boolean(documentDate);
+      if (documentDate)
+        form.elements.document_year.value = documentDate.slice(0, 4);
+    });
+    document
+      .getElementById("addCategoryDocument")
+      ?.addEventListener("click", () => openForm());
+    document
+      .getElementById("cancelCategoryDocument")
+      ?.addEventListener("click", () => dialog.close());
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const payload = {
+        kode: form.elements.kode.value.trim(),
+        judul: form.elements.judul.value.trim(),
+        kategori: category,
+        document_date: form.elements.document_date.value,
+        document_year: form.elements.document_year.value,
+        unit: form.elements.unit.value.trim(),
+        link_download: form.elements.link_download.value.trim(),
+        status: form.elements.status.value,
+        ...(category === "Pedoman"
+          ? { standard_id: form.elements.standard_id.value }
+          : {}),
+        ...(category === "SOP"
+          ? { guideline_id: form.elements.guideline_id.value }
+          : {}),
+      };
+      const id = form.elements.id.value;
+      try {
+        await api(
+          id
+            ? `/admin/documents/edit/${encodeURIComponent(id)}`
+            : "/admin/documents/add",
+          {
+            method: "POST",
+            body: JSON.stringify(payload),
+          },
+        );
+        dialog.close();
+        announce(
+          id ? "Perubahan dokumen disimpan." : "Dokumen berhasil ditambahkan.",
+        );
+        await loadDocuments();
+      } catch (error) {
+        announce(error.message, true);
+      }
+    });
+  }
   loadDocuments();
 });

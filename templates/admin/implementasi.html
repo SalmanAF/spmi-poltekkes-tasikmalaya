@@ -33,6 +33,43 @@
 </section>
 
 {% if selected_document %}
+<section class="content-section card panel-card">
+  <div class="implementation-section-heading">
+    <div>
+      <p class="eyebrow">Riwayat Pengisian</p>
+      <h3>Riwayat perubahan dokumen ini</h3>
+    </div>
+  </div>
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Waktu</th>
+          <th>Diisi oleh</th>
+          <th>Bagian</th>
+          <th>Data tersimpan</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for record in history %}
+        <tr>
+          <td>{{ record.created_at }}</td>
+          <td>{{ record.changed_by }}</td>
+          <td>{{ record.entry_type }}</td>
+          <td>
+            {% for label, value in record["values"] %}
+            <strong>{{ label }}:</strong> {{ value }}{% if not loop.last %}<br />{% endif %}
+            {% endfor %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4">Belum ada riwayat pengisian untuk dokumen ini.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
 <section class="content-section card panel-card implementation-monitoring">
   <div class="implementation-section-heading">
     <div>

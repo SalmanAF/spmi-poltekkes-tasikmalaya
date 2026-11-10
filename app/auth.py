@@ -27,6 +27,10 @@ class SetupUnavailable(ValueError):
     pass
 
 
+ACCOUNT_STATUSES = {"pending", "active", "rejected"}
+ADMIN_ROLES = {"super_admin", "verifikator"}
+
+
 def _connect() -> sqlite3.Connection:
     connection = sqlite3.connect(ADMIN_DB_PATH, timeout=10)
     connection.row_factory = sqlite3.Row
@@ -45,20 +49,81 @@ def initialize_auth_db() -> None:
                 username TEXT NOT NULL COLLATE NOCASE UNIQUE,
                 email TEXT NOT NULL COLLATE NOCASE UNIQUE,
                 password_hash TEXT NOT NULL,
-                status TEXT NOT NULL DEFAULT 'active'
-                    CHECK (status = 'active'),
+                status TEXT NOT NULL DEFAULT 'pending'
+                    CHECK (status IN ('pending', 'active', 'rejected')),
+                role TEXT NOT NULL DEFAULT 'verifikator'
+                    CHECK (role IN ('super_admin', 'verifikator')),
                 created_at TEXT NOT NULL,
                 approved_at TEXT,
                 approved_by INTEGER REFERENCES admin_accounts(id)
             );
-            CREATE INDEX IF NOT EXISTS idx_admin_accounts_status
-                ON admin_accounts(status);
             """
         )
-        with connection:
-            connection.execute(
-                "UPDATE admin_accounts SET status = 'active' WHERE status != 'active'"
-            )
+        columns = {
+            row["name"]
+            for row in connection.execute("PRAGMA table_info(admin_accounts)")
+        }
+        table_sql = connection.execute(
+            "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'admin_accounts'"
+        ).fetchone()["sql"].lower()
+        if "role" not in columns or "rejected" not in table_sql:
+            connection.execute("PRAGMA foreign_keys = OFF")
+            with connection:
+                connection.execute(
+                    """
+                    CREATE TABLE admin_accounts_new (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        full_name TEXT NOT NULL,
+                        username TEXT NOT NULL COLLATE NOCASE UNIQUE,
+                        email TEXT NOT NULL COLLATE NOCASE UNIQUE,
+                        password_hash TEXT NOT NULL,
+                        status TEXT NOT NULL DEFAULT 'pending'
+                            CHECK (status IN ('pending', 'active', 'rejected')),
+                        role TEXT NOT NULL DEFAULT 'verifikator'
+                            CHECK (role IN ('super_admin', 'verifikator')),
+                        created_at TEXT NOT NULL,
+                        approved_at TEXT,
+                        approved_by INTEGER REFERENCES admin_accounts(id)
+                    )
+                    """
+                )
+                rows = connection.execute("SELECT * FROM admin_accounts").fetchall()
+                old_columns = set(columns)
+                for row in rows:
+                    status = row["status"] if row["status"] in ACCOUNT_STATUSES else "pending"
+                    role = (
+                        row["role"]
+                        if "role" in old_columns and row["role"] in ADMIN_ROLES
+                        else ("super_admin" if status == "active" else "verifikator")
+                    )
+                    connection.execute(
+                        """
+                        INSERT INTO admin_accounts_new
+                            (id, full_name, username, email, password_hash, status,
+                             role, created_at, approved_at, approved_by)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            row["id"],
+                            row["full_name"],
+                            row["username"],
+                            row["email"],
+                            row["password_hash"],
+                            status,
+                            role,
+                            row["created_at"],
+                            row["approved_at"] if "approved_at" in old_columns else None,
+                            row["approved_by"] if "approved_by" in old_columns else None,
+                        ),
+                    )
+                connection.execute("DROP TABLE admin_accounts")
+                connection.execute(
+                    "ALTER TABLE admin_accounts_new RENAME TO admin_accounts"
+                )
+            connection.execute("PRAGMA foreign_keys = ON")
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_admin_accounts_status ON admin_accounts(status)"
+        )
 
 
 def hash_password(password: str) -> str:
@@ -143,6 +208,8 @@ def _public_account(row: sqlite3.Row) -> dict[str, object]:
         "full_name": row["full_name"],
         "username": row["username"],
         "email": row["email"],
+        "status": row["status"],
+        "role": row["role"],
         "created_at": row["created_at"],
     }
 
@@ -153,19 +220,21 @@ def _insert_account(
     username: str,
     email: str,
     password: str,
+    role: str,
 ) -> int:
     try:
         cursor = connection.execute(
             """
             INSERT INTO admin_accounts
-                (full_name, username, email, password_hash, status, created_at, approved_at, approved_by)
-            VALUES (?, ?, ?, ?, 'active', ?, NULL, NULL)
+                (full_name, username, email, password_hash, status, role, created_at, approved_at, approved_by)
+            VALUES (?, ?, ?, ?, 'active', ?, ?, NULL, NULL)
             """,
             (
                 full_name.strip(),
                 username.strip(),
                 email.strip().lower(),
                 hash_password(password),
+                role,
                 datetime.now(timezone.utc).isoformat(timespec="seconds"),
             ),
         )
@@ -178,9 +247,24 @@ def register_admin(full_name: str, username: str, email: str, password: str) -> 
     with closing(_connect()) as connection:
         try:
             with connection:
-                _insert_account(connection, full_name, username, email, password)
+                connection.execute(
+                    """
+                    INSERT INTO admin_accounts
+                        (full_name, username, email, password_hash, status, role, created_at)
+                    VALUES (?, ?, ?, ?, 'pending', 'verifikator', ?)
+                    """,
+                    (
+                        full_name.strip(),
+                        username.strip(),
+                        email.strip().lower(),
+                        hash_password(password),
+                        datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                    ),
+                )
         except AccountAlreadyExists:
             raise
+        except sqlite3.IntegrityError as exc:
+            raise AccountAlreadyExists("Username atau email sudah digunakan.") from exc
 
 
 def create_initial_admin(full_name: str, username: str, email: str, password: str) -> int:
@@ -193,9 +277,23 @@ def create_initial_admin(full_name: str, username: str, email: str, password: st
                 ).fetchone()[0]
                 if active_count:
                     raise SetupUnavailable("Setup administrator pertama sudah ditutup.")
-                return _insert_account(connection, full_name, username, email, password)
+                return _insert_account(
+                    connection, full_name, username, email, password, "super_admin"
+                )
         except AccountAlreadyExists:
             raise
+
+
+def create_admin_account(
+    full_name: str, username: str, email: str, password: str, role: str
+) -> int:
+    if role not in ADMIN_ROLES:
+        raise ValueError("Hak akses tidak valid.")
+    with closing(_connect()) as connection:
+        with connection:
+            return _insert_account(
+                connection, full_name, username, email, password, role
+            )
 
 
 def authenticate_admin(identifier: str, password: str) -> dict[str, object] | None:
@@ -204,7 +302,7 @@ def authenticate_admin(identifier: str, password: str) -> dict[str, object] | No
     with closing(_connect()) as connection:
         row = connection.execute(
             """
-            SELECT id, full_name, username, email, created_at, password_hash
+            SELECT id, full_name, username, email, status, role, created_at, password_hash
             FROM admin_accounts
             WHERE username = ? COLLATE NOCASE OR email = ? COLLATE NOCASE
             """,
@@ -223,13 +321,51 @@ def get_active_admin(admin_id: object) -> dict[str, object] | None:
     with closing(_connect()) as connection:
         row = connection.execute(
             """
-            SELECT id, full_name, username, email, created_at
+            SELECT id, full_name, username, email, status, role, created_at
             FROM admin_accounts
             WHERE id = ? AND status = 'active'
             """,
             (parsed_id,),
         ).fetchone()
     return _public_account(row) if row else None
+
+
+def get_pending_admins() -> list[dict[str, object]]:
+    with closing(_connect()) as connection:
+        rows = connection.execute(
+            """
+            SELECT id, full_name, username, email, status, role, created_at
+            FROM admin_accounts
+            WHERE status = 'pending'
+            ORDER BY created_at, id
+            """
+        ).fetchall()
+    return [_public_account(row) for row in rows]
+
+
+def set_admin_status(
+    account_id: int, status: str, approved_by: int | None = None
+) -> bool:
+    if status not in {"active", "rejected"}:
+        raise ValueError("Status akun tidak valid.")
+    with closing(_connect()) as connection:
+        with connection:
+            cursor = connection.execute(
+                """
+                UPDATE admin_accounts
+                SET status = ?, approved_at = ?, approved_by = ?
+                WHERE id = ? AND status = 'pending'
+                """,
+                (
+                    status,
+                    datetime.now(timezone.utc).isoformat(timespec="seconds")
+                    if status == "active"
+                    else None,
+                    approved_by if status == "active" else None,
+                    account_id,
+                ),
+            )
+    return cursor.rowcount == 1
 
 
 def has_active_admin() -> bool:

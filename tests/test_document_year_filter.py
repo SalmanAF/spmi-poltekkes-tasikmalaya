@@ -214,7 +214,10 @@ class DocumentYearFilterTests(unittest.TestCase):
         self.assertIn("Unduh", response.text)
 
     def test_admin_pages_offer_document_date_and_year_fields(self):
-        with patch("app.main.current_admin", return_value={"id": "test-admin"}):
+        with patch(
+            "app.main.current_admin",
+            return_value={"id": "test-admin", "role": "super_admin"},
+        ):
             for path in (
                 "/admin/standar-pt",
                 "/admin/pedoman",
@@ -346,7 +349,10 @@ class DocumentYearFilterTests(unittest.TestCase):
             with (
                 patch("app.user_documents.MANIFEST_PATH", root / "documents.json"),
                 patch("app.user_documents.UPLOADS_DIR", root),
-                patch("app.main.current_admin", return_value={"id": "test-admin"}),
+                patch(
+                    "app.main.current_admin",
+                    return_value={"id": "test-admin", "role": "super_admin"},
+                ),
                 patch("app.main.utc_now", return_value="2026-10-08T00:00:00+00:00"),
                 patch(
                     "app.user_documents.utc_now",

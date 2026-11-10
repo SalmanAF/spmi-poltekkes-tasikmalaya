@@ -27,6 +27,12 @@
 </section>
 
 <section class="content-section card panel-card">
+  <div class="implementation-section-heading">
+    <div>
+      <p class="eyebrow">Ringkasan Monitoring</p>
+      <h3>Kondisi terkini per dokumen</h3>
+    </div>
+  </div>
   <div class="progress-wrap">
     <div class="progress-meta">
       <span>Kelengkapan pengisian narasi PPEPP</span>
@@ -65,6 +71,7 @@
           <th>Bukti Implementasi</th>
           <th>Tanggal</th>
           <th>Catatan</th>
+          <th>Terakhir diperbarui</th>
         </tr>
       </thead>
       <tbody>
@@ -88,15 +95,55 @@
           <td>{{ item.evidence or "—" }}</td>
           <td>{{ item.implementation_date or "—" }}</td>
           <td>{{ item.notes or "—" }}</td>
+          <td>{{ item.latest_update or "—" }}</td>
         </tr>
         {% else %}
         <tr data-monitoring-empty>
-          <td colspan="8">Belum ada dokumen terdaftar untuk dimonitor.</td>
+          <td colspan="9">Belum ada dokumen terdaftar untuk dimonitor.</td>
         </tr>
         {% endfor %}
         <tr data-monitoring-no-results hidden>
-          <td colspan="8">Tidak ada dokumen yang cocok dengan pencarian.</td>
+          <td colspan="9">Tidak ada dokumen yang cocok dengan pencarian.</td>
         </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="content-section card panel-card">
+  <div class="implementation-section-heading">
+    <div>
+      <p class="eyebrow">Riwayat Pengisian</p>
+      <h3>Semua data Monitoring dan PPEPP yang tersimpan</h3>
+    </div>
+  </div>
+  <div class="table-wrapper">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Dokumen</th>
+          <th>Jenis pengisian</th>
+          <th>Data yang disimpan</th>
+          <th>Waktu</th>
+          <th>Diisi oleh</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for record in history %}
+        <tr>
+          <td>{{ record.document_title }} ({{ record.category }})</td>
+          <td>{{ record.entry_type }}</td>
+          <td>
+            {% for label, value in record["values"] %}
+            <strong>{{ label }}:</strong> {{ value }}{% if not loop.last %}<br />{% endif %}
+            {% endfor %}
+          </td>
+          <td>{{ record.created_at }}</td>
+          <td>{{ record.changed_by }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">Belum ada riwayat pengisian.</td></tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>

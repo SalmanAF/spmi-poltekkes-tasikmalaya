@@ -130,7 +130,7 @@ class AdminAuthenticationTests(unittest.TestCase):
         self.assertEqual(logout_response.status_code, 303)
         self.assertEqual(self.client.get("/admin/dashboard").status_code, 303)
 
-    def test_registration_activates_account_and_allows_immediate_login(self):
+    def test_registration_waits_for_approval_before_login(self):
         register_page = self.client.get("/admin/register")
         registration = {
             "csrf_token": self.csrf(register_page),
@@ -145,11 +145,12 @@ class AdminAuthenticationTests(unittest.TestCase):
         self.assertIn("registration-success", response.headers["location"])
         self.assertNotIn("pending", response.headers["location"])
         with closing(sqlite3.connect(auth.ADMIN_DB_PATH)) as connection:
-            status = connection.execute(
-                "SELECT status FROM admin_accounts WHERE username = ?",
+            status, role = connection.execute(
+                "SELECT status, role FROM admin_accounts WHERE username = ?",
                 ("admin.baru",),
-            ).fetchone()[0]
-        self.assertEqual(status, "active")
+            ).fetchone()
+        self.assertEqual(status, "pending")
+        self.assertEqual(role, "verifikator")
 
         duplicate = self.client.post("/admin/register", data=registration)
         self.assertEqual(duplicate.status_code, 400)
@@ -168,7 +169,7 @@ class AdminAuthenticationTests(unittest.TestCase):
         self.assertNotIn("wrong-password", invalid_login.text)
 
         login_page = self.client.get("/admin/login")
-        login_response = self.client.post(
+        pending_login = self.client.post(
             "/admin/login",
             data={
                 "csrf_token": self.csrf(login_page),
@@ -176,11 +177,11 @@ class AdminAuthenticationTests(unittest.TestCase):
                 "password": "StrongPassword123!",
             },
         )
-        self.assertEqual(login_response.status_code, 303)
-        self.assertEqual(login_response.headers["location"], "/admin/dashboard")
-        self.assertEqual(self.client.get("/admin/dashboard").status_code, 200)
+        self.assertEqual(pending_login.status_code, 400)
+        self.assertIn("menunggu verifikasi", pending_login.text)
+        self.assertEqual(self.client.get("/admin/dashboard").status_code, 303)
 
-    def test_existing_pending_accounts_are_activated_on_database_migration(self):
+    def test_pending_accounts_remain_pending_on_database_migration(self):
         with closing(sqlite3.connect(auth.ADMIN_DB_PATH)) as connection:
             connection.execute("DROP TABLE admin_accounts")
             connection.execute(
@@ -218,13 +219,179 @@ class AdminAuthenticationTests(unittest.TestCase):
         auth.initialize_auth_db()
         account = auth.authenticate_admin("admin.lama", "StrongPassword123!")
         self.assertIsNotNone(account)
-        self.assertIsNotNone(auth.get_active_admin(account["id"]))
+        self.assertEqual(account["status"], "pending")
+        self.assertIsNone(auth.get_active_admin(account["id"]))
         with closing(sqlite3.connect(auth.ADMIN_DB_PATH)) as connection:
             status = connection.execute(
                 "SELECT status FROM admin_accounts WHERE username = ?",
                 ("admin.lama",),
             ).fetchone()[0]
+        self.assertEqual(status, "pending")
+
+    def test_legacy_active_accounts_keep_access_after_schema_migration(self):
+        with closing(sqlite3.connect(auth.ADMIN_DB_PATH)) as connection:
+            connection.execute("DROP TABLE admin_accounts")
+            connection.execute(
+                """
+                CREATE TABLE admin_accounts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    full_name TEXT NOT NULL,
+                    username TEXT NOT NULL COLLATE NOCASE UNIQUE,
+                    email TEXT NOT NULL COLLATE NOCASE UNIQUE,
+                    password_hash TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'active' CHECK (status = 'active'),
+                    created_at TEXT NOT NULL,
+                    approved_at TEXT,
+                    approved_by INTEGER REFERENCES admin_accounts(id)
+                )
+                """
+            )
+            connection.execute(
+                """
+                INSERT INTO admin_accounts
+                    (full_name, username, email, password_hash, status, created_at)
+                VALUES (?, ?, ?, ?, 'active', ?)
+                """,
+                (
+                    "Admin Legacy",
+                    "admin.legacy",
+                    "admin.legacy@example.ac.id",
+                    auth.hash_password("StrongPassword123!"),
+                    "2026-10-12T00:00:00+00:00",
+                ),
+            )
+            connection.commit()
+
+        auth.initialize_auth_db()
+        account = auth.authenticate_admin("admin.legacy", "StrongPassword123!")
+        self.assertIsNotNone(account)
+        self.assertEqual(account["status"], "active")
+        self.assertEqual(account["role"], "super_admin")
+        self.assertIsNotNone(auth.get_active_admin(account["id"]))
+
+    def test_verifikator_can_approve_pending_and_super_admin_can_create_accounts(self):
+        registration_page = self.client.get("/admin/register")
+        self.client.post(
+            "/admin/register",
+            data={
+                "csrf_token": self.csrf(registration_page),
+                "full_name": "Pemohon",
+                "username": "pemohon",
+                "email": "pemohon@example.ac.id",
+                "password": "StrongPassword123!",
+                "password_confirmation": "StrongPassword123!",
+            },
+        )
+        with closing(sqlite3.connect(auth.ADMIN_DB_PATH)) as connection:
+            pending_id = connection.execute(
+                "SELECT id FROM admin_accounts WHERE username = ?", ("pemohon",)
+            ).fetchone()[0]
+        self.assertEqual(self.create_first_admin().status_code, 303)
+
+        page = self.client.get("/admin/verifikasi-akun")
+        self.assertEqual(page.status_code, 200)
+        self.assertIn("pemohon@example.ac.id", page.text)
+        approved = self.client.post(
+            f"/admin/verifikasi-akun/{pending_id}/approve",
+            data={"csrf_token": self.page_csrf(page)},
+        )
+        self.assertEqual(approved.status_code, 303)
+        self.assertEqual(auth.get_active_admin(pending_id)["status"], "active")
+
+        page = self.client.get("/admin/verifikasi-akun")
+        created = self.client.post(
+            "/admin/verifikasi-akun/accounts",
+            data={
+                "csrf_token": self.page_csrf(page),
+                "full_name": "Verifikator Baru",
+                "username": "verifikator.baru",
+                "email": "verifikator.baru@example.ac.id",
+                "password": "StrongPassword123!",
+                "password_confirmation": "StrongPassword123!",
+                "role": "verifikator",
+            },
+        )
+        self.assertEqual(created.status_code, 303)
+        with closing(sqlite3.connect(auth.ADMIN_DB_PATH)) as connection:
+            status, role = connection.execute(
+                "SELECT status, role FROM admin_accounts WHERE username = ?",
+                ("verifikator.baru",),
+            ).fetchone()
         self.assertEqual(status, "active")
+        self.assertEqual(role, "verifikator")
+
+        dashboard = self.client.get("/admin/dashboard")
+        self.client.post(
+            "/admin/logout", data={"csrf_token": self.csrf(dashboard)}
+        )
+        verifier = TestClient(app, follow_redirects=False)
+        try:
+            login_page = verifier.get("/admin/login")
+            login = verifier.post(
+                "/admin/login",
+                data={
+                    "csrf_token": self.csrf(login_page),
+                    "username_or_email": "verifikator.baru",
+                    "password": "StrongPassword123!",
+                },
+            )
+            self.assertEqual(login.status_code, 303)
+            page = verifier.get("/admin/verifikasi-akun")
+            self.assertEqual(page.status_code, 403)
+            dashboard = verifier.get("/admin/dashboard")
+            self.assertNotIn("/admin/verifikasi-akun", dashboard.text)
+            forbidden = verifier.post(
+                "/admin/verifikasi-akun/accounts",
+                data={
+                    "csrf_token": self.page_csrf(dashboard),
+                    "full_name": "Admin Terlarang",
+                    "username": "admin.terlarang",
+                    "email": "admin.terlarang@example.ac.id",
+                    "password": "StrongPassword123!",
+                    "password_confirmation": "StrongPassword123!",
+                    "role": "super_admin",
+                },
+            )
+            self.assertEqual(forbidden.status_code, 403)
+            for action in ("approve", "reject"):
+                denied = verifier.post(
+                    f"/admin/verifikasi-akun/1/{action}",
+                    data={"csrf_token": self.page_csrf(dashboard)},
+                )
+                self.assertEqual(denied.status_code, 403)
+        finally:
+            verifier.close()
+
+    def test_verifikator_can_reject_pending_accounts(self):
+        registration_page = self.client.get("/admin/register")
+        self.client.post(
+            "/admin/register",
+            data={
+                "csrf_token": self.csrf(registration_page),
+                "full_name": "Pemohon Ditolak",
+                "username": "pemohon.ditolak",
+                "email": "pemohon.ditolak@example.ac.id",
+                "password": "StrongPassword123!",
+                "password_confirmation": "StrongPassword123!",
+            },
+        )
+        with closing(sqlite3.connect(auth.ADMIN_DB_PATH)) as connection:
+            pending_id = connection.execute(
+                "SELECT id FROM admin_accounts WHERE username = ?",
+                ("pemohon.ditolak",),
+            ).fetchone()[0]
+        self.assertEqual(self.create_first_admin().status_code, 303)
+        page = self.client.get("/admin/verifikasi-akun")
+        rejected = self.client.post(
+            f"/admin/verifikasi-akun/{pending_id}/reject",
+            data={"csrf_token": self.page_csrf(page)},
+        )
+        self.assertEqual(rejected.status_code, 303)
+        with closing(sqlite3.connect(auth.ADMIN_DB_PATH)) as connection:
+            status = connection.execute(
+                "SELECT status FROM admin_accounts WHERE id = ?", (pending_id,)
+            ).fetchone()[0]
+        self.assertEqual(status, "rejected")
 
     def test_registration_validates_password_strength(self):
         register_page = self.client.get("/admin/register")

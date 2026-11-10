@@ -1,0 +1,103 @@
+{% extends "admin/base.html" %}
+{% block title %}Verifikasi Akun | Dashboard SPMI{% endblock %}
+{% block content %}
+<section class="content-section">
+  <div class="section-head">
+    <h3>VERIFIKASI AKUN BARU</h3>
+    <p>Periksa permohonan akun sebelum memberikan akses ke dashboard.</p>
+  </div>
+  {% if verification_message %}
+  <p class="status-pill status-green" role="status">{{ verification_message }}</p>
+  {% endif %}
+  <div class="card panel-card">
+    <div class="table-toolbar">
+      <h3>Permohonan menunggu ({{ pending_accounts|length }})</h3>
+    </div>
+    {% if pending_accounts %}
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nama</th>
+            <th>Username</th>
+            <th>Email</th>
+            <th>Tanggal pengajuan</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for account in pending_accounts %}
+          <tr>
+            <td>{{ account.full_name }}</td>
+            <td>{{ account.username }}</td>
+            <td>{{ account.email }}</td>
+            <td>{{ account.created_at }}</td>
+            <td>
+              <div class="action-buttons">
+                <form method="post" action="/admin/verifikasi-akun/{{ account.id }}/approve">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+                  <button class="btn btn-primary" type="submit">Setujui</button>
+                </form>
+                <form method="post" action="/admin/verifikasi-akun/{{ account.id }}/reject">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+                  <button class="btn btn-secondary" type="submit">Tolak</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p>Tidak ada permohonan akun yang menunggu verifikasi.</p>
+    {% endif %}
+  </div>
+</section>
+
+{% if is_super_admin %}
+<section class="content-section">
+  <div class="card panel-card">
+    <div class="section-head">
+      <h3>TAMBAH AKUN ADMIN</h3>
+      <p>Akun yang dibuat Super Admin langsung aktif dan dapat login.</p>
+    </div>
+    {% if account_error %}
+    <p class="status-pill status-red" role="alert">{{ account_error }}</p>
+    {% endif %}
+    <form method="post" action="/admin/verifikasi-akun/accounts" class="form-grid">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+      <label>
+        Nama lengkap
+        <input type="text" name="full_name" required minlength="2" maxlength="100" value="{{ account_values.full_name or '' }}" />
+      </label>
+      <label>
+        Username
+        <input type="text" name="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9_.-]{3,32}" value="{{ account_values.username or '' }}" />
+      </label>
+      <label>
+        Email
+        <input type="email" name="email" required maxlength="254" value="{{ account_values.email or '' }}" />
+      </label>
+      <label>
+        Hak akses
+        <select name="role" required>
+          {% for role_value, role_label in roles %}
+          <option value="{{ role_value }}" {% if account_values.role == role_value %}selected{% endif %}>{{ role_label }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        Password
+        <input type="password" name="password" required minlength="12" maxlength="128" autocomplete="new-password" />
+      </label>
+      <label>
+        Konfirmasi password
+        <input type="password" name="password_confirmation" required minlength="12" maxlength="128" autocomplete="new-password" />
+      </label>
+      <div><button class="btn btn-primary" type="submit">Buat akun admin</button></div>
+    </form>
+  </div>
+</section>
+{% endif %}
+{% endblock %}
