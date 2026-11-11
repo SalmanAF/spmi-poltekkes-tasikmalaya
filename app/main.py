@@ -2,13 +2,13 @@ import logging
 import os
 import secrets
 import uuid
+from contextlib import asynccontextmanager
 from pathlib import Path
 from math import ceil
 import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-app = FastAPI()
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse
 from pydantic import ValidationError
@@ -20,6 +20,7 @@ from app.auth import (
     AccountAlreadyExists,
     SetupUnavailable,
     authenticate_admin,
+    bootstrap_super_admin,
     create_admin_account,
     create_initial_admin,
     get_active_admin,
@@ -65,12 +66,6 @@ from app.user_documents import (
 )
 from app.routers.spmi import admin_router as spmi_admin_router
 
-app = FastAPI(
-    title="Dashboard Integrasi Dokumen SPMI",
-    description="Website visual dashboard untuk dokumen dan foto SPMI",
-    version="1.0.0",
-)
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.abspath(os.path.join(os.path.dirname(BASE_DIR), "static"))
 if not os.path.isdir(STATIC_DIR):
@@ -88,6 +83,45 @@ if len(SESSION_SECRET.encode("utf-8")) < 32:
 SETUP_TOKEN = os.getenv("SPMI_ADMIN_SETUP_TOKEN", "").strip()
 if SETUP_TOKEN and (len(SETUP_TOKEN) < 32 or not SETUP_TOKEN.isascii()):
     logger.warning("SPMI_ADMIN_SETUP_TOKEN harus berisi minimal 32 karakter ASCII.")
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    initialize_auth_db()
+    sync_document_registry(all_documents())
+
+    bootstrap_values = {
+        "full_name": os.getenv("SPMI_BOOTSTRAP_ADMIN_NAME", "").strip(),
+        "username": os.getenv("SPMI_BOOTSTRAP_ADMIN_USERNAME", "").strip(),
+        "email": os.getenv("SPMI_BOOTSTRAP_ADMIN_EMAIL", "").strip(),
+        "password": os.getenv("SPMI_BOOTSTRAP_ADMIN_PASSWORD", ""),
+    }
+    configured_values = [bool(value) for value in bootstrap_values.values()]
+    if any(configured_values) and not all(configured_values):
+        raise RuntimeError(
+            "Bootstrap Super Admin memerlukan SPMI_BOOTSTRAP_ADMIN_NAME, "
+            "SPMI_BOOTSTRAP_ADMIN_USERNAME, SPMI_BOOTSTRAP_ADMIN_EMAIL, dan "
+            "SPMI_BOOTSTRAP_ADMIN_PASSWORD sekaligus."
+        )
+    if all(configured_values):
+        account_id = bootstrap_super_admin(**bootstrap_values)
+        if account_id is None:
+            logger.info("Bootstrap dilewati: role Super Admin sudah tersedia.")
+        else:
+            logger.warning(
+                "Bootstrap Super Admin selesai (account_id=%s). "
+                "Hapus variabel bootstrap rahasia dari environment deployment.",
+                account_id,
+            )
+    yield
+
+
+app = FastAPI(
+    title="Dashboard Integrasi Dokumen SPMI",
+    description="Website visual dashboard untuk dokumen dan foto SPMI",
+    version="1.0.0",
+    lifespan=lifespan,
+)
 
 initialize_auth_db()
 sync_document_registry(all_documents())

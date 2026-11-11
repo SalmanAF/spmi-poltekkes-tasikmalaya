@@ -296,6 +296,25 @@ def create_admin_account(
             )
 
 
+def bootstrap_super_admin(
+    full_name: str, username: str, email: str, password: str
+) -> int | None:
+    error = validate_account_fields(full_name, username, email, password)
+    if error:
+        raise ValueError(error)
+    with closing(_connect()) as connection:
+        with connection:
+            connection.execute("BEGIN IMMEDIATE")
+            existing = connection.execute(
+                "SELECT 1 FROM admin_accounts WHERE role = 'super_admin' LIMIT 1"
+            ).fetchone()
+            if existing:
+                return None
+            return _insert_account(
+                connection, full_name, username, email, password, "super_admin"
+            )
+
+
 def authenticate_admin(identifier: str, password: str) -> dict[str, object] | None:
     if len(password) > 128:
         return None
